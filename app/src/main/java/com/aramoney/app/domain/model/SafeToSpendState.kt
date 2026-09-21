@@ -35,11 +35,11 @@ sealed class SafeToSpendState {
     ) : SafeToSpendState()
 
     data class NeedsSetup(
-        val message: String = "Yuk atur tanggal kiriman berikutnya agar batas jajan harian bisa dihitung! 🌸"
+        val message: String = "Yuk atur target jajan harianmu agar daya tahan saldo bisa dihitung! 🌸"
     ) : SafeToSpendState()
 
     data class EmptyBalance(
-        val remainingDays: Long,
+        val remainingDays: Long = 0L,
         val message: String = "Belum ada saldo tercatat. Yuk catat kiriman atau saldo awalmu! 🎀"
     ) : SafeToSpendState()
 }

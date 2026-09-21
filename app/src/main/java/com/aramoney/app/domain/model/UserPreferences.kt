@@ -14,5 +14,6 @@ data class UserPreferences(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val initialBalance: Double = 0.0,
     val profilePhotoPath: String? = null,
-    val avatarPresetId: String = "sakura_girl"
+    val avatarPresetId: String = "sakura_girl",
+    val dailyTargetBudget: Double = 30_000.0
 )

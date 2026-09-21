@@ -76,10 +76,11 @@ class HomeViewModel @Inject constructor(
         val totalExpense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
         val currentBalance = preferences.initialBalance + totalIncome - totalExpense
 
-        // Hitung Safe-to-Spend harian
+        // Hitung Safe-to-Spend harian (Financial Runway)
         val today = LocalDate.now()
         val safeToSpend = calculateSafeToSpendUseCase(
             saldoSaatIni = currentBalance,
+            dailyTargetBudget = preferences.dailyTargetBudget,
             tanggalKirimanBerikutnya = preferences.nextAllowanceDate,
             today = today
         )

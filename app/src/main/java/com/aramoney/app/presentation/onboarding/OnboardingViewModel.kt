@@ -16,6 +16,8 @@ data class OnboardingUiState(
     val currentPage: Int = 0,
     val userName: String = "",
     val initialBalanceText: String = "",
+    val dailyTargetBudget: Double = 30_000.0,
+    val customDailyBudgetText: String = "",
     val nextAllowanceDate: LocalDate = LocalDate.now().plusDays(25),
     val isCompleted: Boolean = false,
     val errorMessage: String? = null
@@ -23,11 +25,17 @@ data class OnboardingUiState(
     val initialBalance: Double
         get() = initialBalanceText.toDoubleOrNull() ?: 0.0
 
+    val effectiveDailyTarget: Double
+        get() = customDailyBudgetText.toDoubleOrNull() ?: dailyTargetBudget
+
     val isStep1Valid: Boolean
         get() = userName.isNotBlank()
 
     val isStep2Valid: Boolean
         get() = initialBalance >= 0.0
+
+    val isStep3Valid: Boolean
+        get() = effectiveDailyTarget > 0.0
 }
 
 @HiltViewModel
@@ -47,6 +55,15 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { it.copy(initialBalanceText = clean, errorMessage = null) }
     }
 
+    fun onDailyTargetPresetSelected(preset: Double) {
+        _uiState.update { it.copy(dailyTargetBudget = preset, customDailyBudgetText = "") }
+    }
+
+    fun onCustomDailyBudgetChanged(text: String) {
+        val clean = text.filter { it.isDigit() }
+        _uiState.update { it.copy(customDailyBudgetText = clean) }
+    }
+
     fun onNextAllowanceDateChanged(date: LocalDate) {
         _uiState.update { it.copy(nextAllowanceDate = date) }
     }
@@ -59,11 +76,13 @@ class OnboardingViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            val target = if (state.effectiveDailyTarget > 0.0) state.effectiveDailyTarget else 30_000.0
             userPreferencesRepository.completeOnboarding(
                 userName = state.userName.trim(),
                 initialBalance = state.initialBalance,
                 nextAllowanceDate = state.nextAllowanceDate,
-                monthlyAllowanceBudget = state.initialBalance // Set default nominal bulanan sama dengan saldo awal
+                monthlyAllowanceBudget = state.initialBalance,
+                dailyTargetBudget = target
             )
             _uiState.update { it.copy(isCompleted = true) }
         }

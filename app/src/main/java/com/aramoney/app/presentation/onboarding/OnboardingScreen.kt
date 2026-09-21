@@ -1,6 +1,7 @@
 package com.aramoney.app.presentation.onboarding
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -144,9 +145,12 @@ fun OnboardingScreen(
                             onBalanceChange = { viewModel.onInitialBalanceChanged(it) },
                             isDark = isDark
                         )
-                        2 -> StepNextAllowanceDate(
-                            selectedDate = uiState.nextAllowanceDate,
-                            onDateSelected = { viewModel.onNextAllowanceDateChanged(it) },
+                        2 -> StepDailyTargetBudget(
+                            selectedPreset = uiState.dailyTargetBudget,
+                            customBudgetText = uiState.customDailyBudgetText,
+                            initialBalance = uiState.initialBalance,
+                            onPresetSelected = { viewModel.onDailyTargetPresetSelected(it) },
+                            onCustomBudgetChange = { viewModel.onCustomDailyBudgetChanged(it) },
                             isDark = isDark
                         )
                     }
@@ -168,6 +172,7 @@ fun OnboardingScreen(
                 val canProceed = when (pagerState.currentPage) {
                     0 -> uiState.isStep1Valid
                     1 -> uiState.isStep2Valid
+                    2 -> uiState.isStep3Valid
                     else -> true
                 }
 
@@ -354,23 +359,21 @@ private fun StepInitialBalance(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StepNextAllowanceDate(
-    selectedDate: LocalDate,
-    onDateSelected: (LocalDate) -> Unit,
+private fun StepDailyTargetBudget(
+    selectedPreset: Double,
+    customBudgetText: String,
+    initialBalance: Double,
+    onPresetSelected: (Double) -> Unit,
+    onCustomBudgetChange: (String) -> Unit,
     isDark: Boolean
 ) {
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    )
+    val presets = listOf(20_000.0, 30_000.0, 50_000.0)
+    val isCustom = customBudgetText.isNotBlank()
+    val activeTarget = customBudgetText.toDoubleOrNull() ?: selectedPreset
 
-    // Update state saat user memilih tanggal pada picker
-    LaunchedEffect(datePickerState.selectedDateMillis) {
-        val millis = datePickerState.selectedDateMillis
-        if (millis != null) {
-            val picked = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-            onDateSelected(picked)
-        }
-    }
+    val estimatedDays = if (activeTarget > 0 && initialBalance > 0) {
+        (initialBalance / activeTarget).toLong()
+    } else 0L
 
     Column(
         modifier = Modifier
@@ -378,10 +381,10 @@ private fun StepNextAllowanceDate(
             .verticalScroll(rememberScrollState())
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Kapan Kiriman Uang Berikutnya? 📅",
+            text = "Target Jajan Harianmu? 🌸",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = if (isDark) TextPrimaryDark else DeepBerryDark,
@@ -389,29 +392,92 @@ private fun StepNextAllowanceDate(
         )
 
         Text(
-            text = "Penting untuk menghitung batas jajan harian aman (Safe-to-Spend).",
+            text = "Batas jajan harian yang nyaman buat kamu untuk mengukur daya tahan saldo dompet (Financial Runway).",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .softShadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp)),
-            shape = RoundedCornerShape(20.dp),
-            color = if (isDark) SurfaceCardDark else SurfaceCard
+        Text(
+            text = "Pilih Rekomendasi Target:",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = if (isDark) TextPrimaryDark else DeepBerryDark,
+            modifier = Modifier.align(Alignment.Start)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            DatePicker(
-                state = datePickerState,
-                showModeToggle = false,
-                colors = DatePickerDefaults.colors(
-                    containerColor = Color.Transparent,
-                    selectedDayContainerColor = PrimarySakuraPink,
-                    selectedDayContentColor = Color.White,
-                    todayDateBorderColor = PrimarySakuraPink
-                )
-            )
+            presets.forEach { preset ->
+                val isSelected = !isCustom && selectedPreset == preset
+                Surface(
+                    onClick = { onPresetSelected(preset) },
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isSelected) PrimarySakuraPink else if (isDark) SurfaceCardDark else SurfaceCard,
+                    border = BorderStroke(
+                        1.2.dp,
+                        if (isSelected) PrimarySakuraPink else if (isDark) Color(0xFF4B2E52) else Color(0xFFF7E6EE)
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = CurrencyFormatter.formatRupiah(preset),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) Color.White else if (isDark) TextPrimaryDark else DeepBerryDark
+                        )
+                    }
+                }
+            }
+        }
+
+        OutlinedTextField(
+            value = customBudgetText,
+            onValueChange = onCustomBudgetChange,
+            label = { Text("Atau Isi Nominal Kustom (Rp/hari)") },
+            placeholder = { Text("Contoh: 35000") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PrimarySakuraPink,
+                focusedLabelColor = PrimarySakuraPink
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Kartu Estimasi Runway Interaktif
+        if (initialBalance > 0) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .softShadow(elevation = 3.dp, shape = RoundedCornerShape(18.dp)),
+                shape = RoundedCornerShape(18.dp),
+                color = if (isDark) Color(0xFF38233D) else Color(0xFFFFF0F5)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "✨ Estimasi Daya Tahan Saldo",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimarySakuraPink
+                    )
+                    Text(
+                        text = "Dengan saldo awal ${CurrencyFormatter.formatRupiah(initialBalance)} dan target ${CurrencyFormatter.formatRupiah(activeTarget)}/hari, saldo Kakak diperkirakan cukup untuk ~$estimatedDays hari ke depan! 🎀",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    )
+                }
+            }
         }
     }
 }

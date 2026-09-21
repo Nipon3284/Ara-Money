@@ -204,12 +204,12 @@ fun SafeToSpendHeroCard(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Sisa Hari: ",
+                        text = "Daya Tahan: ",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.85f)
                     )
                     Text(
-                        text = "$remainingDays hari",
+                        text = if (remainingDays <= 0L) "< 1 hari" else "$remainingDays hari",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

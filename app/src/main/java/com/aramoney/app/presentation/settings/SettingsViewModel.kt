@@ -1,4 +1,4 @@
-﻿package com.aramoney.app.presentation.settings
+package com.aramoney.app.presentation.settings
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -25,7 +25,7 @@ data class SettingsUiState(
     val userPreferences: UserPreferences = UserPreferences(),
     val categories: List<CategoryEntity> = emptyList(),
     val isProfileDialogOpen: Boolean = false,
-    val isAllowanceDialogOpen: Boolean = false,
+    val isDailyTargetDialogOpen: Boolean = false,
     val backupPreview: BackupPreview? = null,
     val pendingRestoreUri: Uri? = null,
     val feedbackMessage: String? = null
@@ -33,7 +33,7 @@ data class SettingsUiState(
 
 private data class DialogStateHolder(
     val isProfileDialogOpen: Boolean = false,
-    val isAllowanceDialogOpen: Boolean = false,
+    val isDailyTargetDialogOpen: Boolean = false,
     val backupPreview: BackupPreview? = null,
     val pendingRestoreUri: Uri? = null,
     val feedbackMessage: String? = null
@@ -57,7 +57,7 @@ class SettingsViewModel @Inject constructor(
             userPreferences = prefs,
             categories = categories,
             isProfileDialogOpen = dialogs.isProfileDialogOpen,
-            isAllowanceDialogOpen = dialogs.isAllowanceDialogOpen,
+            isDailyTargetDialogOpen = dialogs.isDailyTargetDialogOpen,
             backupPreview = dialogs.backupPreview,
             pendingRestoreUri = dialogs.pendingRestoreUri,
             feedbackMessage = dialogs.feedbackMessage
@@ -99,25 +99,24 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateAllowanceSettings(nextDate: LocalDate, monthlyBudget: Double) {
+    fun openDailyTargetDialog() {
+        _dialogState.update { it.copy(isDailyTargetDialogOpen = true) }
+    }
+
+    fun closeDailyTargetDialog() {
+        _dialogState.update { it.copy(isDailyTargetDialogOpen = false) }
+    }
+
+    fun updateDailyTargetBudget(target: Double) {
         viewModelScope.launch {
-            userPreferencesRepository.setNextAllowanceDate(nextDate)
-            userPreferencesRepository.setMonthlyAllowanceBudget(monthlyBudget)
+            userPreferencesRepository.setDailyTargetBudget(target)
             _dialogState.update {
                 it.copy(
-                    isAllowanceDialogOpen = false,
-                    feedbackMessage = "Pengaturan tanggal kiriman berhasil diperbarui! 🌸"
+                    isDailyTargetDialogOpen = false,
+                    feedbackMessage = "Target jajan harian berhasil diperbarui! 🌸"
                 )
             }
         }
-    }
-
-    fun openAllowanceDialog() {
-        _dialogState.update { it.copy(isAllowanceDialogOpen = true) }
-    }
-
-    fun closeAllowanceDialog() {
-        _dialogState.update { it.copy(isAllowanceDialogOpen = false) }
     }
 
     fun exportBackup(uri: Uri) {

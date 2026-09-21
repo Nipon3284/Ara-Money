@@ -37,6 +37,7 @@ class UserPreferencesRepository @Inject constructor(
         val INITIAL_BALANCE = doublePreferencesKey("initial_balance")
         val PROFILE_PHOTO_PATH = stringPreferencesKey("profile_photo_path")
         val AVATAR_PRESET_ID = stringPreferencesKey("avatar_preset_id")
+        val DAILY_TARGET_BUDGET = doublePreferencesKey("daily_target_budget")
     }
 
     val userPreferences: Flow<UserPreferences> = context.dataStore.data
@@ -63,7 +64,8 @@ class UserPreferencesRepository @Inject constructor(
                 themeMode = themeMode,
                 initialBalance = preferences[PreferencesKeys.INITIAL_BALANCE] ?: 0.0,
                 profilePhotoPath = preferences[PreferencesKeys.PROFILE_PHOTO_PATH],
-                avatarPresetId = preferences[PreferencesKeys.AVATAR_PRESET_ID] ?: "sakura_girl"
+                avatarPresetId = preferences[PreferencesKeys.AVATAR_PRESET_ID] ?: "sakura_girl",
+                dailyTargetBudget = preferences[PreferencesKeys.DAILY_TARGET_BUDGET] ?: 30_000.0
             )
         }
 
@@ -103,17 +105,25 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setDailyTargetBudget(amount: Double) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.DAILY_TARGET_BUDGET] = amount
+        }
+    }
+
     suspend fun completeOnboarding(
         userName: String,
         initialBalance: Double,
         nextAllowanceDate: LocalDate,
-        monthlyAllowanceBudget: Double
+        monthlyAllowanceBudget: Double,
+        dailyTargetBudget: Double = 30_000.0
     ) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.USER_NAME] = userName
             preferences[PreferencesKeys.INITIAL_BALANCE] = initialBalance
             preferences[PreferencesKeys.NEXT_ALLOWANCE_DATE_EPOCH_DAY] = nextAllowanceDate.toEpochDay()
             preferences[PreferencesKeys.MONTHLY_ALLOWANCE_BUDGET] = monthlyAllowanceBudget
+            preferences[PreferencesKeys.DAILY_TARGET_BUDGET] = dailyTargetBudget
             preferences[PreferencesKeys.IS_ONBOARDED] = true
         }
     }

@@ -3,6 +3,7 @@ package com.aramoney.app.presentation.settings
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Payments
+import androidx.compose.material.icons.rounded.Savings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -225,26 +227,14 @@ fun SettingsScreen(
                 }
             }
 
-            // 4. Pengaturan Tanggal Kiriman & Uang Saku
+            // 4. Pengaturan Anggaran & Target Harian
             item {
-                SettingsSectionCard(title = "Keuangan & Kiriman Uang", isDark = isDark) {
-                    val allowanceDateText = uiState.userPreferences.nextAllowanceDate?.let {
-                        DateTimeUtil.formatLocalDate(it)
-                    } ?: "Belum diatur"
-
+                SettingsSectionCard(title = "Keuangan & Anggaran Harian", isDark = isDark) {
                     SettingsActionRow(
-                        icon = Icons.Rounded.CalendarToday,
-                        title = "Tanggal Kiriman Berikutnya",
-                        subtitle = allowanceDateText,
-                        onClick = { viewModel.openAllowanceDialog() },
-                        isDark = isDark
-                    )
-
-                    SettingsActionRow(
-                        icon = Icons.Rounded.Payments,
-                        title = "Nominal Saku Bulanan",
-                        subtitle = CurrencyFormatter.formatRupiah(uiState.userPreferences.monthlyAllowanceBudget),
-                        onClick = { viewModel.openAllowanceDialog() },
+                        icon = Icons.Rounded.Savings,
+                        title = "Target Jajan Harian (Gaya Hidup)",
+                        subtitle = "${CurrencyFormatter.formatRupiah(uiState.userPreferences.dailyTargetBudget)} / hari",
+                        onClick = { viewModel.openDailyTargetDialog() },
                         isDark = isDark
                     )
                 }
@@ -324,13 +314,12 @@ fun SettingsScreen(
         )
     }
 
-    // Dialog Pengaturan Tanggal Kiriman & Uang Saku
-    if (uiState.isAllowanceDialogOpen) {
-        EditAllowanceDialog(
-            initialDate = uiState.userPreferences.nextAllowanceDate ?: LocalDate.now().plusDays(20),
-            initialBudget = uiState.userPreferences.monthlyAllowanceBudget,
-            onDismiss = { viewModel.closeAllowanceDialog() },
-            onSave = { date, budget -> viewModel.updateAllowanceSettings(date, budget) },
+    // Dialog Pengaturan Target Jajan Harian
+    if (uiState.isDailyTargetDialogOpen) {
+        EditDailyTargetBudgetDialog(
+            currentTarget = uiState.userPreferences.dailyTargetBudget,
+            onDismiss = { viewModel.closeDailyTargetDialog() },
+            onSave = { target -> viewModel.updateDailyTargetBudget(target) },
             isDark = isDark
         )
     }
@@ -627,29 +616,27 @@ private fun AboutAppCard(isDark: Boolean) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditAllowanceDialog(
-    initialDate: LocalDate,
-    initialBudget: Double,
+private fun EditDailyTargetBudgetDialog(
+    currentTarget: Double,
     onDismiss: () -> Unit,
-    onSave: (LocalDate, Double) -> Unit,
+    onSave: (Double) -> Unit,
     isDark: Boolean
 ) {
-    var budgetText by remember {
-        mutableStateOf(if (initialBudget > 0) initialBudget.toLong().toString() else "")
+    val presets = listOf(20_000.0, 30_000.0, 50_000.0)
+    var customBudgetText by remember {
+        mutableStateOf(if (currentTarget !in presets && currentTarget > 0) currentTarget.toLong().toString() else "")
     }
-
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    )
+    var selectedPreset by remember {
+        mutableStateOf(if (currentTarget in presets) currentTarget else null)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(28.dp),
         title = {
             Text(
-                text = "Atur Tanggal Kiriman & Saku 📅",
+                text = "Target Jajan Harian 🌸",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = if (isDark) TextPrimaryDark else DeepBerryDark
@@ -658,45 +645,80 @@ private fun EditAllowanceDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedTextField(
-                    value = budgetText,
-                    onValueChange = { input -> if (input.all { it.isDigit() }) budgetText = input },
-                    label = { Text("Nominal Uang Saku Bulanan (Rp)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimarySakuraPink),
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    text = "Batas jajan nyaman harian untuk mengukur daya tahan saldo dompet (Financial Runway) kamu.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Text(
-                    text = "Pilih tanggal kiriman berikutnya:",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium
+                    text = "Pilihan Rekomendasi:",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) TextPrimaryDark else DeepBerryDark
                 )
 
-                DatePicker(
-                    state = datePickerState,
-                    showModeToggle = false,
-                    colors = DatePickerDefaults.colors(
-                        selectedDayContainerColor = PrimarySakuraPink,
-                        selectedDayContentColor = Color.White
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    presets.forEach { preset ->
+                        val isSelected = selectedPreset == preset && customBudgetText.isBlank()
+                        Surface(
+                            onClick = {
+                                selectedPreset = preset
+                                customBudgetText = ""
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) PrimarySakuraPink else if (isDark) SurfaceCardDark else SurfaceCard,
+                            border = BorderStroke(
+                                1.2.dp,
+                                if (isSelected) PrimarySakuraPink else if (isDark) Color(0xFF4B2E52) else Color(0xFFF7E6EE)
+                            ),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = CurrencyFormatter.formatRupiah(preset),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else if (isDark) TextPrimaryDark else DeepBerryDark
+                                )
+                            }
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = customBudgetText,
+                    onValueChange = { input ->
+                        val clean = input.filter { it.isDigit() }
+                        customBudgetText = clean
+                        selectedPreset = null
+                    },
+                    label = { Text("Atau Nominal Kustom (Rp/hari)") },
+                    placeholder = { Text("Contoh: 35000") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimarySakuraPink,
+                        focusedLabelColor = PrimarySakuraPink
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val budget = budgetText.toDoubleOrNull() ?: 0.0
-                    val millis = datePickerState.selectedDateMillis
-                    val date = if (millis != null) {
-                        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-                    } else initialDate
-
-                    onSave(date, budget)
+                    val finalAmount = selectedPreset ?: customBudgetText.toDoubleOrNull() ?: 30_000.0
+                    onSave(if (finalAmount > 0) finalAmount else 30_000.0)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
                 shape = RoundedCornerShape(14.dp)
