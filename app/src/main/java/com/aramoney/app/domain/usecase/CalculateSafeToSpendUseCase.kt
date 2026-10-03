@@ -6,9 +6,10 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 /**
- * UseCase untuk menghitung batas nominal jajan harian yang aman ("Safe-To-Spend")
- * dan daya tahan dompet (Financial Runway) bagi mahasiswi berdasarkan saldo berjalan
- * dan standar gaya hidup / target jajan harian.
+ * UseCase untuk mengevaluasi kesehatan finansial harian mahasiswi:
+ * - Menghitung pengeluaran rata-rata per hari bulan berjalan
+ * - Menghitung sisa kuota jajan hari ini (Target - Belanja Hari Ini)
+ * - Menghitung daya tahan dompet (Financial Runway)
  */
 class CalculateSafeToSpendUseCase @Inject constructor() {
 
@@ -21,12 +22,25 @@ class CalculateSafeToSpendUseCase @Inject constructor() {
     operator fun invoke(
         saldoSaatIni: Double,
         dailyTargetBudget: Double = DEFAULT_DAILY_TARGET,
+        dailyAverageExpense: Double = 0.0,
+        todayExpense: Double = 0.0,
         tanggalKirimanBerikutnya: LocalDate? = null,
         today: LocalDate = LocalDate.now()
     ): SafeToSpendState {
+        val effectiveTarget = if (dailyTargetBudget > 0.0) dailyTargetBudget else DEFAULT_DAILY_TARGET
+        val remainingTodayBudget = maxOf(0.0, effectiveTarget - todayExpense)
+        val formattedTodayQuota = CurrencyFormatter.formatRupiah(remainingTodayBudget)
+        val formattedAvg = CurrencyFormatter.formatRupiah(dailyAverageExpense)
+        val formattedTarget = CurrencyFormatter.formatRupiah(effectiveTarget)
+
         // Edge Case 1: Saldo tepat Rp0
         if (saldoSaatIni == 0.0) {
-            return SafeToSpendState.EmptyBalance(remainingDays = 0L)
+            return SafeToSpendState.EmptyBalance(
+                remainingDays = 0L,
+                totalBalance = 0.0,
+                dailyAverageExpense = dailyAverageExpense,
+                remainingTodayBudget = remainingTodayBudget
+            )
         }
 
         // Edge Case 2: Saldo defisit / minus
@@ -36,47 +50,84 @@ class CalculateSafeToSpendUseCase @Inject constructor() {
                 formattedDailyBudget = CurrencyFormatter.formatRupiah(0.0),
                 remainingDays = 0L,
                 totalBalance = saldoSaatIni,
-                message = "Waduh, dompet minus Kak! Yuk rem belanja dulu 😢💸"
+                message = "Waduh, dompet minus Kak! Yuk rem belanja dulu 😢💸",
+                dailyAverageExpense = dailyAverageExpense,
+                todayExpense = todayExpense,
+                remainingTodayBudget = 0.0,
+                dailyTargetBudget = effectiveTarget
             )
         }
 
-        // Pastikan target harian valid (> 0)
-        val effectiveTarget = if (dailyTargetBudget > 0.0) dailyTargetBudget else DEFAULT_DAILY_TARGET
-
         // Hitung Daya Tahan (Financial Runway) dalam hari
         val remainingDays = (saldoSaatIni / effectiveTarget).toLong()
-
-        // Batas aman jajan hari ini adalah target harian, namun tidak melebihi sisa total saldo
         val dailyBudget = minOf(effectiveTarget, saldoSaatIni)
-        val formatted = CurrencyFormatter.formatRupiah(dailyBudget)
+        val formattedBudget = CurrencyFormatter.formatRupiah(dailyBudget)
+        val dayStr = if (remainingDays <= 0L) "< 1" else "$remainingDays"
 
         return when {
+            // Kondisi Kritis: Runway di bawah 3 hari
             remainingDays < RUNWAY_WARNING_DAYS -> {
-                val dayStr = if (remainingDays <= 0L) "< 1" else "$remainingDays"
                 SafeToSpendState.Bahaya(
                     dailyBudget = dailyBudget,
-                    formattedDailyBudget = formatted,
+                    formattedDailyBudget = formattedBudget,
                     remainingDays = remainingDays,
                     totalBalance = saldoSaatIni,
-                    message = "Waduh, dompet menipis Kak! Saldo hanya cukup untuk ~$dayStr hari. Rem belanja dulu yuk! 😢💸"
+                    message = "Waduh, dompet menipis Kak! Saldo hanya cukup untuk ~$dayStr hari. Rem belanja dulu yuk! 😢💸",
+                    dailyAverageExpense = dailyAverageExpense,
+                    todayExpense = todayExpense,
+                    remainingTodayBudget = remainingTodayBudget,
+                    dailyTargetBudget = effectiveTarget
                 )
             }
+
+            // Kondisi Waspada 1: Rata-rata belanja melampaui target gaya hidup
+            dailyAverageExpense > effectiveTarget -> {
+                SafeToSpendState.Waspada(
+                    dailyBudget = dailyBudget,
+                    formattedDailyBudget = formattedBudget,
+                    remainingDays = remainingDays,
+                    totalBalance = saldoSaatIni,
+                    message = "Waspada Kak! Rata-rata jajan ($formattedAvg/hari) melampaui target ($formattedTarget/hari). Rem belanja dulu yuk! 🍵",
+                    dailyAverageExpense = dailyAverageExpense,
+                    todayExpense = todayExpense,
+                    remainingTodayBudget = remainingTodayBudget,
+                    dailyTargetBudget = effectiveTarget
+                )
+            }
+
+            // Kondisi Waspada 2: Runway terbatas (3 - 6 hari)
             remainingDays < RUNWAY_SAFE_DAYS -> {
                 SafeToSpendState.Waspada(
                     dailyBudget = dailyBudget,
-                    formattedDailyBudget = formatted,
+                    formattedDailyBudget = formattedBudget,
                     remainingDays = remainingDays,
                     totalBalance = saldoSaatIni,
-                    message = "Pelan-pelan ya Kak, saldo tersisa untuk $remainingDays hari (~$formatted/hari). Kurangi boba dulu~ 🍵"
+                    message = "Pelan-pelan ya Kak, sisa $remainingDays hari. Sisa kuota hari ini: $formattedTodayQuota 🍵",
+                    dailyAverageExpense = dailyAverageExpense,
+                    todayExpense = todayExpense,
+                    remainingTodayBudget = remainingTodayBudget,
+                    dailyTargetBudget = effectiveTarget
                 )
             }
+
+            // Kondisi Aman: Runway mencukupi & rata-rata pengeluaran terkendali
             else -> {
+                val safeMessage = if (dailyAverageExpense == 0.0) {
+                    "Belum ada belanja bulan ini! Kuota hari ini: $formattedTodayQuota ya, Kak~ 🌸"
+                } else {
+                    "Keren! Rata-rata belanja ($formattedAvg/hari) lebih hemat dari target. Sisa kuota hari ini: $formattedTodayQuota 🌸"
+                }
+
                 SafeToSpendState.Aman(
                     dailyBudget = dailyBudget,
-                    formattedDailyBudget = formatted,
+                    formattedDailyBudget = formattedBudget,
                     remainingDays = remainingDays,
                     totalBalance = saldoSaatIni,
-                    message = "Saldo aman untuk $remainingDays hari ke depan! Jajan santai $formatted hari ini ya~ 🌸"
+                    message = safeMessage,
+                    dailyAverageExpense = dailyAverageExpense,
+                    todayExpense = todayExpense,
+                    remainingTodayBudget = remainingTodayBudget,
+                    dailyTargetBudget = effectiveTarget
                 )
             }
         }

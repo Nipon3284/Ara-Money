@@ -76,16 +76,8 @@ class HomeViewModel @Inject constructor(
         val totalExpense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
         val currentBalance = preferences.initialBalance + totalIncome - totalExpense
 
-        // Hitung Safe-to-Spend harian (Financial Runway)
-        val today = LocalDate.now()
-        val safeToSpend = calculateSafeToSpendUseCase(
-            saldoSaatIni = currentBalance,
-            dailyTargetBudget = preferences.dailyTargetBudget,
-            tanggalKirimanBerikutnya = preferences.nextAllowanceDate,
-            today = today
-        )
-
         // Filter transaksi khusus HARI INI
+        val today = LocalDate.now()
         val zone = ZoneId.systemDefault()
         val todayStartMillis = today.atStartOfDay(zone).toInstant().toEpochMilli()
         val todayEndMillis = today.atTime(23, 59, 59, 999_000_000).atZone(zone).toInstant().toEpochMilli()
@@ -93,6 +85,24 @@ class HomeViewModel @Inject constructor(
         val todayTransactions = transactions.filter { it.timestamp in todayStartMillis..todayEndMillis }
         val todayExpense = todayTransactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
         val todayIncome = todayTransactions.filter { it.type == "INCOME" }.sumOf { it.amount }
+
+        // Hitung pengeluaran bulan berjalan & rata-rata belanja per hari
+        val startOfMonthMillis = today.withDayOfMonth(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val currentMonthExpenses = transactions.filter {
+            it.type == "EXPENSE" && it.timestamp in startOfMonthMillis..todayEndMillis
+        }.sumOf { it.amount }
+        val daysElapsedInMonth = today.dayOfMonth.coerceAtLeast(1)
+        val dailyAverageExpense = currentMonthExpenses / daysElapsedInMonth
+
+        // Hitung Safe-to-Spend harian (Rata-Rata Pengeluaran & Financial Runway)
+        val safeToSpend = calculateSafeToSpendUseCase(
+            saldoSaatIni = currentBalance,
+            dailyTargetBudget = preferences.dailyTargetBudget,
+            dailyAverageExpense = dailyAverageExpense,
+            todayExpense = todayExpense,
+            tanggalKirimanBerikutnya = preferences.nextAllowanceDate,
+            today = today
+        )
 
         // Filter transaksi hari ini berdasarkan kategori jika ada yang dipilih
         val filteredTodayTransactions = if (selectedCategory != null) {
