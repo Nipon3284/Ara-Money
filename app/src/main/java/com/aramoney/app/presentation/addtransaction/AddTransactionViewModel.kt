@@ -101,6 +101,14 @@ class AddTransactionViewModel @Inject constructor(
         _uiState.update { it.copy(rawAmountString = "", errorMessage = null) }
     }
 
+    fun onQuickAmountAdd(addAmount: Long) {
+        val current = _uiState.value.rawAmountString.toLongOrNull() ?: 0L
+        val newAmount = current + addAmount
+        if (newAmount in 1..999_999_999) {
+            _uiState.update { it.copy(rawAmountString = newAmount.toString(), errorMessage = null) }
+        }
+    }
+
     fun onCategorySelected(categoryId: Long) {
         _uiState.update { it.copy(selectedCategoryId = categoryId, errorMessage = null) }
     }

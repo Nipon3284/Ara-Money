@@ -50,6 +50,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -86,6 +88,7 @@ fun AddTransactionSheet(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isDark = isAppInDarkTheme()
+    val haptic = LocalHapticFeedback.current
 
     // Jika berhasil tersimpan, tutup modal bottom sheet dan reset
     LaunchedEffect(uiState.isSavedSuccess) {
@@ -188,6 +191,12 @@ fun AddTransactionSheet(
                 }
             }
 
+            // Presets Tambah Cepat (+10rb, +20rb, +50rb, +100rb) untuk input 3-ketukan
+            QuickAmountChipsRow(
+                onQuickAdd = { viewModel.onQuickAmountAdd(it) },
+                isDark = isDark
+            )
+
             // Pesan Error Validasi (jika melebihi batas 100 juta atau kosong)
             if (uiState.errorMessage != null) {
                 Surface(
@@ -225,7 +234,10 @@ fun AddTransactionSheet(
                         BubbleCategoryChip(
                             category = category,
                             isSelected = category.id == uiState.selectedCategoryId,
-                            onClick = { viewModel.onCategorySelected(category.id) },
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.onCategorySelected(category.id)
+                            },
                             isDark = isDark
                         )
                     }
@@ -273,7 +285,10 @@ fun AddTransactionSheet(
                     .padding(top = 8.dp, bottom = 14.dp)
             ) {
                 Button(
-                    onClick = { viewModel.saveTransaction() },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.saveTransaction()
+                    },
                     enabled = uiState.canSave,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -452,6 +467,7 @@ private fun CustomPastelNumpad(
     onClearClick: () -> Unit,
     isDark: Boolean
 ) {
+    val haptic = LocalHapticFeedback.current
     val rows = listOf(
         listOf("1", "2", "3"),
         listOf("4", "5", "6"),
@@ -475,6 +491,7 @@ private fun CustomPastelNumpad(
                             .defaultMinSize(minHeight = 50.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 when (item) {
                                     "DEL" -> onBackspaceClick()
                                     else -> onDigitClick(item)
@@ -511,6 +528,56 @@ private fun CustomPastelNumpad(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Chip preset nominal cepat (+10rb, +20rb, +50rb, +100rb) untuk input 3-ketukan ultra-cepat
+ */
+@Composable
+private fun QuickAmountChipsRow(
+    onQuickAdd: (Long) -> Unit,
+    isDark: Boolean
+) {
+    val haptic = LocalHapticFeedback.current
+    val quickAmounts = listOf(
+        10_000L to "+10rb",
+        20_000L to "+20rb",
+        50_000L to "+50rb",
+        100_000L to "+100rb"
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        quickAmounts.forEach { (amount, label) ->
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onQuickAdd(amount)
+                    }
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = "Tambah $label rupiah"
+                    },
+                shape = RoundedCornerShape(12.dp),
+                color = if (isDark) SurfaceCardDark else PrimarySakuraPinkContainer.copy(alpha = 0.55f),
+                border = BorderStroke(1.dp, if (isDark) Color(0xFF4B2E52) else PrimarySakuraPink.copy(alpha = 0.35f))
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDark) PrimarySakuraPink else DeepBerryDark,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 9.dp)
+                )
             }
         }
     }

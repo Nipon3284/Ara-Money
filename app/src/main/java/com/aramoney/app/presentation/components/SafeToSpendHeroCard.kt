@@ -13,7 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,15 +35,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aramoney.app.domain.model.SafeToSpendState
-import com.aramoney.app.presentation.theme.PrimarySakuraPink
-import com.aramoney.app.presentation.theme.SecondaryLavender
+import com.aramoney.app.presentation.theme.HeroGradientEnd
+import com.aramoney.app.presentation.theme.HeroGradientStart
 import com.aramoney.app.presentation.theme.softShadow
 import com.aramoney.app.util.CurrencyFormatter
 
 /**
- * Hero Card utama yang menampilkan pengeluaran rata-rata per hari,
- * sisa kuota jajan hari ini, dan daya tahan dompet (financial runway)
- * dengan animasi pertambahan angka (count-up) dan ornamen bunga sakura mekar.
+ * Hero Card utama dengan konsep Triple-Lens Financial Horizon:
+ * 1. Lensa Rata-Rata Aktual (Highlight Utama)
+ * 2. Lensa Sisa Jatah Hari Ini (Micro-Action)
+ * 3. Lensa Daya Tahan Saldo / Runway (Peace of Mind)
  */
 @Composable
 fun SafeToSpendHeroCard(
@@ -52,104 +60,104 @@ fun SafeToSpendHeroCard(
         else -> 0f
     }
 
-    // Animasi Count-Up angka pengeluaran rata-rata harian
+    // Animasi Count-Up angka pengeluaran rata-rata harian (600ms smooth)
     val animatedNominal by animateFloatAsState(
         targetValue = targetNominal,
-        animationSpec = tween(durationMillis = 900, easing = FastOutSlowInEasing),
-        label = "HeroCountUp"
+        animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
+        label = "HeroDailyAverageCountUp"
     )
 
     val cardGradient = Brush.linearGradient(
-        colors = listOf(PrimarySakuraPink, SecondaryLavender)
+        colors = listOf(HeroGradientStart, HeroGradientEnd)
     )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .softShadow(elevation = 12.dp, shape = RoundedCornerShape(28.dp), shadowColor = PrimarySakuraPink.copy(alpha = 0.35f))
+            .softShadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(28.dp),
+                shadowColor = HeroGradientStart.copy(alpha = 0.35f)
+            )
             .clip(RoundedCornerShape(28.dp))
             .background(cardGradient)
-            .padding(22.dp)
+            .padding(20.dp)
     ) {
-        // Ornamen Bunga Sakura di sudut kanan atas dengan opacity 0.30
+        // Ornamen Bunga Sakura di sudut kanan atas
         FloralDecoration(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset(x = 6.dp, y = (-6).dp),
-            size = 110.dp,
+                .offset(x = 8.dp, y = (-8).dp),
+            size = 116.dp,
             tint = Color.White,
-            opacity = 0.30f
+            opacity = 0.22f
         )
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Label Header Card
+            // 1. Header: Status Tag Empatis & Indikator
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    color = Color.White.copy(alpha = 0.25f),
+                    color = Color.White.copy(alpha = 0.22f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "📊 RATA-RATA PENGELUARAN HARIAN",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            letterSpacing = 0.8.sp
-                        )
-                    }
-                }
-            }
-
-            // Angka Utama Saldo Rata-rata Harian
-            when (state) {
-                is SafeToSpendState.NeedsSetup -> {
-                    Text(
-                        text = "Rp 0",
-                        style = MaterialTheme.typography.displayLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-                is SafeToSpendState.NeedsDateUpdate -> {
-                    Text(
-                        text = "Update Tanggal 📅",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-                else -> {
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        val (icon, statusText) = when (state) {
+                            is SafeToSpendState.Aman -> Icons.Rounded.CheckCircle to "Rata-Rata Terkendali 🌸"
+                            is SafeToSpendState.Waspada -> Icons.Rounded.WarningAmber to "Cek Pengeluaran 🍵"
+                            is SafeToSpendState.Bahaya -> Icons.Rounded.Favorite to "Perlu Hemat 🎀"
+                            else -> Icons.Rounded.CalendarMonth to "Kondisi Dompet 🌸"
+                        }
+                        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
                         Text(
-                            text = CurrencyFormatter.formatRupiah(animatedNominal.toDouble()),
-                            style = MaterialTheme.typography.displayLarge,
+                            text = statusText,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-                        Text(
-                            text = "/ hari",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White.copy(alpha = 0.80f),
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
                     }
                 }
             }
 
-            // Pesan Copywriting Ramah Mahasiswi
+            // 2. Angka Utama (Rata-rata Pengeluaran Per Hari)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Pengeluaran Rata-Rata Bulan Ini",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.88f)
+                )
+
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = CurrencyFormatter.formatRupiah(animatedNominal.toDouble()),
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "/ hari",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+            }
+
+            // 3. Pesan Empatis Pendukung (Frosted Glass Container)
             val messageText = when (state) {
                 is SafeToSpendState.Aman -> state.message
                 is SafeToSpendState.Waspada -> state.message
@@ -160,8 +168,8 @@ fun SafeToSpendHeroCard(
             }
 
             Surface(
-                color = Color.White.copy(alpha = 0.20f),
-                shape = RoundedCornerShape(14.dp),
+                color = Color.White.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -169,19 +177,16 @@ fun SafeToSpendHeroCard(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Sub-info: Sisa Kuota Hari Ini, Daya Tahan Saldo, dan Total Saldo
-            val totalBalance = when (state) {
-                is SafeToSpendState.Aman -> state.totalBalance
-                is SafeToSpendState.Waspada -> state.totalBalance
-                is SafeToSpendState.Bahaya -> state.totalBalance
-                is SafeToSpendState.NeedsDateUpdate -> state.totalBalance
-                is SafeToSpendState.EmptyBalance -> state.totalBalance
+            // 4. Dua Kartu Mini: Sisa Kuota Hari Ini & Daya Tahan Saldo
+            val remainingTodayBudget = when (state) {
+                is SafeToSpendState.Aman -> state.remainingTodayBudget
+                is SafeToSpendState.Waspada -> state.remainingTodayBudget
+                is SafeToSpendState.Bahaya -> state.remainingTodayBudget
+                is SafeToSpendState.EmptyBalance -> state.remainingTodayBudget
                 else -> 0.0
             }
 
@@ -193,11 +198,12 @@ fun SafeToSpendHeroCard(
                 else -> 0L
             }
 
-            val remainingTodayBudget = when (state) {
-                is SafeToSpendState.Aman -> state.remainingTodayBudget
-                is SafeToSpendState.Waspada -> state.remainingTodayBudget
-                is SafeToSpendState.Bahaya -> state.remainingTodayBudget
-                is SafeToSpendState.EmptyBalance -> state.remainingTodayBudget
+            val totalBalance = when (state) {
+                is SafeToSpendState.Aman -> state.totalBalance
+                is SafeToSpendState.Waspada -> state.totalBalance
+                is SafeToSpendState.Bahaya -> state.totalBalance
+                is SafeToSpendState.NeedsDateUpdate -> state.totalBalance
+                is SafeToSpendState.EmptyBalance -> state.totalBalance
                 else -> 0.0
             }
 
@@ -208,79 +214,88 @@ fun SafeToSpendHeroCard(
                 else -> 0.0
             }
 
-            Column(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Baris 1: Sisa Kuota Hari Ini & Daya Tahan
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Sisa Kuota Hari Ini
+                Surface(
+                    color = Color.Black.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.padding(10.dp)) {
                         Text(
-                            text = "Sisa Kuota Hari Ini: ",
-                            style = MaterialTheme.typography.bodySmall,
+                            text = "Jatah Hari Ini",
+                            style = MaterialTheme.typography.labelSmall,
                             color = Color.White.copy(alpha = 0.85f)
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = CurrencyFormatter.formatRupiah(remainingTodayBudget),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Daya Tahan: ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                        Text(
-                            text = if (remainingDays <= 0L) "< 1 hari" else "$remainingDays hari",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                     }
                 }
 
-                // Baris 2: Total Saldo & Target Gaya Hidup
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Daya Tahan Saldo (Runway)
+                Surface(
+                    color = Color.Black.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.padding(10.dp)) {
                         Text(
-                            text = "Total Saldo: ",
-                            style = MaterialTheme.typography.bodySmall,
+                            text = "Daya Tahan",
+                            style = MaterialTheme.typography.labelSmall,
                             color = Color.White.copy(alpha = 0.85f)
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = CurrencyFormatter.formatRupiah(totalBalance),
-                            style = MaterialTheme.typography.bodySmall,
+                            text = if (remainingDays <= 0L) "< 1 Hari" else "$remainingDays Hari Lagi",
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                     }
+                }
+            }
 
-                    if (dailyTargetBudget > 0) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Target: ",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.85f)
-                            )
-                            Text(
-                                text = "${CurrencyFormatter.formatRupiah(dailyTargetBudget)}/hr",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
+            // Total Saldo Berjalan & Target di bagian bawah
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Total Saldo: ",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                    Text(
+                        text = CurrencyFormatter.formatRupiah(totalBalance),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                if (dailyTargetBudget > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Target: ",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                        Text(
+                            text = "${CurrencyFormatter.formatRupiah(dailyTargetBudget)}/hr",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     }
                 }
             }

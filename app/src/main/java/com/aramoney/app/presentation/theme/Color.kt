@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Sistem Token Warna "Ara Money"
- * Desain feminin pastel yang nyaman dipandang, ramah kontras (WCAG AA),
+ * Desain feminin pastel yang nyaman dipandang, ramah kontras (WCAG AA & AAA),
  * dan memiliki variasi "Sakura Night" yang lembut untuk malam hari.
  */
 
@@ -45,7 +45,28 @@ val TextMutedDark = Color(0xFF9E7C9E)
 val BorderDarkPink = Color(0xFF55325C)
 
 // ==========================================
-// SHADOW TINTS
+// SHADOW TINTS & GRADIENTS
 // ==========================================
-val SoftShadowPink = Color(0xFFF48FB1).copy(alpha = 0.18f)
+val SoftShadowPink = Color(0xFFF48FB1).copy(alpha = 0.22f)
 val SoftShadowDark = Color(0xFF000000).copy(alpha = 0.35f)
+
+val HeroGradientStart = Color(0xFFE27399)
+val HeroGradientEnd = Color(0xFFA566B0)
+
+// ==========================================
+// EMPATHETIC STATUS PALETTE (Aman/Waspada/Bahaya)
+// ==========================================
+val StatusSafeBgLight = Color(0xFFE8F5E9)
+val StatusSafeTextLight = Color(0xFF1B5E20)
+val StatusSafeBgDark = Color(0xFF1C3421)
+val StatusSafeTextDark = Color(0xFFA5D6A7)
+
+val StatusWarningBgLight = Color(0xFFFFF8E1)
+val StatusWarningTextLight = Color(0xFFB45309)
+val StatusWarningBgDark = Color(0xFF3E2C0D)
+val StatusWarningTextDark = Color(0xFFFFE082)
+
+val StatusDangerBgLight = Color(0xFFFFEBEE)
+val StatusDangerTextLight = Color(0xFFB71C1C)
+val StatusDangerBgDark = Color(0xFF3C181C)
+val StatusDangerTextDark = Color(0xFFFFCDD2)
