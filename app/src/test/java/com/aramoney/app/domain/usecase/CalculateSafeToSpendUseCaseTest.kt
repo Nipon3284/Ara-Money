@@ -115,4 +115,29 @@ class CalculateSafeToSpendUseCaseTest {
         assertEquals(30_000.0, aman.dailyBudget, 0.01)
         assertEquals(10L, aman.remainingDays)
     }
+
+    @Test
+    fun `when next allowance date has passed then return NeedsDateUpdate`() {
+        val result = useCase(
+            saldoSaatIni = 300_000.0,
+            dailyTargetBudget = 30_000.0,
+            tanggalKirimanBerikutnya = today.minusDays(1),
+            today = today
+        )
+
+        assertTrue(result is SafeToSpendState.NeedsDateUpdate)
+        assertEquals(300_000.0, (result as SafeToSpendState.NeedsDateUpdate).totalBalance, 0.01)
+    }
+
+    @Test
+    fun `when next allowance date is today or later then calculate normally`() {
+        val result = useCase(
+            saldoSaatIni = 300_000.0,
+            dailyTargetBudget = 30_000.0,
+            tanggalKirimanBerikutnya = today,
+            today = today
+        )
+
+        assertTrue(result is SafeToSpendState.Aman)
+    }
 }

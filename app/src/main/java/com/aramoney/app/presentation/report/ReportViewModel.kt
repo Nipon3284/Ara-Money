@@ -1,4 +1,4 @@
-﻿package com.aramoney.app.presentation.report
+package com.aramoney.app.presentation.report
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -141,10 +141,6 @@ class ReportViewModel @Inject constructor(
         }
     }
 
-    fun onMonthSelected(yearMonth: YearMonth) {
-        _selectedYearMonth.value = yearMonth
-    }
-
     fun onPreviousDay() {
         _selectedDate.update { it.minusDays(1) }
     }
@@ -176,7 +172,7 @@ class ReportViewModel @Inject constructor(
     }
 
     fun onTransactionClick(transaction: TransactionEntity) {
-        val isOlderThan24h = (System.currentTimeMillis() - transaction.timestamp) > 24 * 60 * 60 * 1000L
+        val isOlderThan24h = com.aramoney.app.util.DateTimeUtil.isOlderThan24h(transaction.timestamp)
         if (isOlderThan24h) {
             _oldTransactionWarning.value = transaction
         } else {

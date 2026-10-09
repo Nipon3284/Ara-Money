@@ -1,22 +1,46 @@
 package com.aramoney.app.presentation.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.aramoney.app.R
 
 /**
  * Konfigurasi Tipografi "Ara Money"
- * Menggunakan Poppins (Heading/Display) untuk kesan modern ceria dan Nunito (Body)
- * untuk kenyamanan membaca angka dan teks keuangan.
+ * - Poppins (Heading/Display/Title): kesan modern ceria.
+ * - Nunito (Body/Label): nyaman dibaca untuk angka & teks keuangan.
  *
- * Menggunakan fallback FontFamily.SansSerif agar 100% offline-safe
- * tanpa ketergantungan Google Fonts runtime download yang membutuhkan internet.
+ * Seluruh font dibundel di res/font (lisensi SIL OFL) sehingga 100% offline-safe.
+ * Nunito memakai variable font; tiap ketebalan diambil lewat FontVariation (API 26+).
  */
 
-val PoppinsFontFamily: FontFamily = FontFamily.SansSerif
-val NunitoFontFamily: FontFamily = FontFamily.SansSerif
+val PoppinsFontFamily: FontFamily = FontFamily(
+    Font(R.font.poppins_medium, FontWeight.Normal),
+    Font(R.font.poppins_medium, FontWeight.Medium),
+    Font(R.font.poppins_semibold, FontWeight.SemiBold),
+    Font(R.font.poppins_bold, FontWeight.Bold),
+    Font(R.font.poppins_bold, FontWeight.ExtraBold)
+)
+
+@OptIn(ExperimentalTextApi::class)
+private fun nunito(weight: FontWeight) = Font(
+    resId = R.font.nunito_variable,
+    weight = weight,
+    variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight))
+)
+
+val NunitoFontFamily: FontFamily = FontFamily(
+    nunito(FontWeight.Normal),
+    nunito(FontWeight.Medium),
+    nunito(FontWeight.SemiBold),
+    nunito(FontWeight.Bold),
+    nunito(FontWeight.ExtraBold)
+)
 
 val AraTypography = Typography(
     displayLarge = TextStyle(

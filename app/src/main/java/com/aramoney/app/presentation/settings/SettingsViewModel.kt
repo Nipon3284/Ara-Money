@@ -26,6 +26,8 @@ data class SettingsUiState(
     val categories: List<CategoryEntity> = emptyList(),
     val isProfileDialogOpen: Boolean = false,
     val isDailyTargetDialogOpen: Boolean = false,
+    val isAllowanceDateDialogOpen: Boolean = false,
+    val isBackupInProgress: Boolean = false,
     val backupPreview: BackupPreview? = null,
     val pendingRestoreUri: Uri? = null,
     val feedbackMessage: String? = null
@@ -34,6 +36,8 @@ data class SettingsUiState(
 private data class DialogStateHolder(
     val isProfileDialogOpen: Boolean = false,
     val isDailyTargetDialogOpen: Boolean = false,
+    val isAllowanceDateDialogOpen: Boolean = false,
+    val isBackupInProgress: Boolean = false,
     val backupPreview: BackupPreview? = null,
     val pendingRestoreUri: Uri? = null,
     val feedbackMessage: String? = null
@@ -58,6 +62,8 @@ class SettingsViewModel @Inject constructor(
             categories = categories,
             isProfileDialogOpen = dialogs.isProfileDialogOpen,
             isDailyTargetDialogOpen = dialogs.isDailyTargetDialogOpen,
+            isAllowanceDateDialogOpen = dialogs.isAllowanceDateDialogOpen,
+            isBackupInProgress = dialogs.isBackupInProgress,
             backupPreview = dialogs.backupPreview,
             pendingRestoreUri = dialogs.pendingRestoreUri,
             feedbackMessage = dialogs.feedbackMessage
@@ -87,7 +93,7 @@ class SettingsViewModel @Inject constructor(
             _dialogState.update {
                 it.copy(
                     isProfileDialogOpen = false,
-                    feedbackMessage = "Profil berhasil diperbarui! 🌸"
+                    feedbackMessage = "Profil berhasil diperbarui"
                 )
             }
         }
@@ -113,24 +119,43 @@ class SettingsViewModel @Inject constructor(
             _dialogState.update {
                 it.copy(
                     isDailyTargetDialogOpen = false,
-                    feedbackMessage = "Target jajan harian berhasil diperbarui! 🌸"
+                    feedbackMessage = "Target jajan harian diperbarui"
                 )
             }
         }
     }
 
+    fun openAllowanceDateDialog() {
+        _dialogState.update { it.copy(isAllowanceDateDialogOpen = true) }
+    }
+
+    fun closeAllowanceDateDialog() {
+        _dialogState.update { it.copy(isAllowanceDateDialogOpen = false) }
+    }
+
+    fun updateNextAllowanceDate(date: LocalDate) {
+        viewModelScope.launch {
+            userPreferencesRepository.setNextAllowanceDate(date)
+            _dialogState.update {
+                it.copy(isAllowanceDateDialogOpen = false, feedbackMessage = "Tanggal kiriman berikutnya disimpan")
+            }
+        }
+    }
+
     fun exportBackup(uri: Uri) {
+        _dialogState.update { it.copy(isBackupInProgress = true) }
         viewModelScope.launch {
             val result = jsonBackupManager.exportDataToJsonUri(uri)
+            _dialogState.update { it.copy(isBackupInProgress = false) }
             result.fold(
                 onSuccess = {
                     _dialogState.update {
-                        it.copy(feedbackMessage = "Cadangan data berhasil disimpan dengan aman! 💾✨")
+                        it.copy(feedbackMessage = "Cadangan data berhasil disimpan")
                     }
                 },
                 onFailure = { err ->
                     _dialogState.update {
-                        it.copy(feedbackMessage = "Gagal mencadangkan data: ${err.message}")
+                        it.copy(feedbackMessage = "Gagal mencadangkan data. Pastikan lokasi penyimpanan bisa ditulis, lalu coba lagi.")
                     }
                 }
             )
@@ -138,8 +163,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onImportFileSelected(uri: Uri) {
+        _dialogState.update { it.copy(isBackupInProgress = true) }
         viewModelScope.launch {
             val result = jsonBackupManager.inspectBackupFile(uri)
+            _dialogState.update { it.copy(isBackupInProgress = false) }
             result.fold(
                 onSuccess = { preview ->
                     _dialogState.update {
@@ -151,7 +178,7 @@ class SettingsViewModel @Inject constructor(
                 },
                 onFailure = { err ->
                     _dialogState.update {
-                        it.copy(feedbackMessage = "Berkas cadangan tidak valid: ${err.message}")
+                        it.copy(feedbackMessage = "Berkas ini bukan cadangan Ara Money yang valid. Pilih berkas .json hasil \"Cadangkan\".")
                     }
                 }
             )
@@ -160,13 +187,15 @@ class SettingsViewModel @Inject constructor(
 
     fun confirmRestore() {
         val uri = _dialogState.value.pendingRestoreUri ?: return
+        _dialogState.update { it.copy(isBackupInProgress = true) }
         viewModelScope.launch {
             val result = jsonBackupManager.restoreDataFromJsonUri(uri)
+            _dialogState.update { it.copy(isBackupInProgress = false) }
             result.fold(
                 onSuccess = {
                     _dialogState.update {
                         it.copy(
-                            feedbackMessage = "Data berhasil dipulihkan seutuhnya! 🎉🌸",
+                            feedbackMessage = "Data berhasil dipulihkan",
                             pendingRestoreUri = null,
                             backupPreview = null
                         )
@@ -174,7 +203,7 @@ class SettingsViewModel @Inject constructor(
                 },
                 onFailure = { err ->
                     _dialogState.update {
-                        it.copy(feedbackMessage = "Gagal memulihkan data: ${err.message}")
+                        it.copy(feedbackMessage = "Gagal memulihkan data. Berkas mungkin rusak, coba berkas cadangan lain.", pendingRestoreUri = null, backupPreview = null)
                     }
                 }
             )

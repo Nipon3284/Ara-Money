@@ -139,6 +139,11 @@ class HomeViewModel @Inject constructor(
         initialValue = HomeUiState()
     )
 
+    /** Perbarui tanggal kiriman berikutnya dari Beranda (saat status NeedsDateUpdate). */
+    fun updateNextAllowanceDate(date: LocalDate) {
+        viewModelScope.launch { userPreferencesRepository.setNextAllowanceDate(date) }
+    }
+
     fun onCategorySelected(categoryId: Long?) {
         if (categoryId == null || _selectedCategoryId.value == categoryId) {
             _selectedCategoryId.value = null
@@ -148,7 +153,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onTransactionClick(transaction: TransactionEntity) {
-        val isOlderThan24h = (System.currentTimeMillis() - transaction.timestamp) > 24 * 60 * 60 * 1000L
+        val isOlderThan24h = com.aramoney.app.util.DateTimeUtil.isOlderThan24h(transaction.timestamp)
         if (isOlderThan24h) {
             _oldTransactionWarning.value = transaction
         } else {

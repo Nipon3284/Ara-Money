@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -31,7 +32,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.aramoney.app.presentation.theme.PrimarySakuraPink
-import com.aramoney.app.presentation.theme.SecondaryLavender
+import com.aramoney.app.presentation.theme.HeroGradientEnd
+import com.aramoney.app.presentation.theme.HeroGradientStart
 import com.aramoney.app.presentation.theme.softShadow
 
 /**
@@ -42,6 +44,7 @@ import com.aramoney.app.presentation.theme.softShadow
 fun CuteFAB(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    contentDescription: String = "Tambah transaksi baru",
     size: Dp = 62.dp
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -62,7 +65,7 @@ fun CuteFAB(
     )
 
     val fabGradient = Brush.linearGradient(
-        colors = listOf(PrimarySakuraPink, SecondaryLavender)
+        colors = listOf(HeroGradientStart, HeroGradientEnd)
     )
 
     Box(
@@ -79,12 +82,12 @@ fun CuteFAB(
             .background(fabGradient)
             .clickable(
                 interactionSource = interactionSource,
-                indication = null,
+                indication = ripple(bounded = true, color = Color.White),
                 onClick = onClick
             )
             .semantics {
                 role = Role.Button
-                contentDescription = "Tambah transaksi baru"
+                this.contentDescription = contentDescription
             },
         contentAlignment = Alignment.Center
     ) {

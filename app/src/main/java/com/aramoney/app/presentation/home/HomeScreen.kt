@@ -51,6 +51,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aramoney.app.presentation.components.AllCategoryChip
+import com.aramoney.app.presentation.components.AllowanceDateDialog
+import com.aramoney.app.domain.model.SafeToSpendState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.aramoney.app.presentation.components.AraEmptyState
+import com.aramoney.app.presentation.components.DeleteTransactionDialog
+import com.aramoney.app.presentation.components.OldTransactionWarningDialog
 import com.aramoney.app.presentation.components.CategoryChip
 import com.aramoney.app.presentation.components.LocalAraSnackbar
 import androidx.compose.foundation.selection.selectableGroup
@@ -85,6 +93,7 @@ fun HomeScreen(
     val isDark = isAppInDarkTheme()
     val scrollState = rememberLazyListState()
     val snackbar = LocalAraSnackbar.current
+    var showAllowanceDatePicker by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -146,7 +155,10 @@ fun HomeScreen(
             item {
                 SafeToSpendHeroCard(
                     state = uiState.safeToSpendState,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    onCardClick = if (uiState.safeToSpendState is SafeToSpendState.NeedsDateUpdate) {
+                        { showAllowanceDatePicker = true }
+                    } else null
                 )
             }
 
@@ -319,66 +331,28 @@ fun HomeScreen(
         }
     }
 
-    // Dialog Peringatan Ubah Transaksi Lama (> 24 Jam)
-    if (uiState.oldTransactionWarning != null) {
-        val oldTx = uiState.oldTransactionWarning!!
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissOldTransactionWarning() },
-            shape = RoundedCornerShape(24.dp),
-            icon = {
-                Icon(
-                    imageVector = Icons.Rounded.WarningAmber,
-                    contentDescription = null,
-                    tint = AraTheme.colors.warning,
-                    modifier = Modifier.size(36.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "Transaksi Lama (> 24 Jam) ⚠️",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AraTheme.colors.textStrong,
-                    textAlign = TextAlign.Center
-                )
-            },
-            text = {
-                Text(
-                    text = "Transaksi senilai ${CurrencyFormatter.formatRupiah(oldTx.amount)} ini tercatat lebih dari 24 jam yang lalu. Mengubah transaksi lama dapat memengaruhi riwayat saldo masa lalu Kakak.\n\nApakah Kakak yakin tetap ingin mengubah transaksi ini?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.confirmEditOldTransaction() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "Tetap Ubah",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.dismissOldTransactionWarning() },
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "Batal",
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+    if (showAllowanceDatePicker) {
+        AllowanceDateDialog(
+            onDismiss = { showAllowanceDatePicker = false },
+            onConfirm = {
+                viewModel.updateNextAllowanceDate(it)
+                showAllowanceDatePicker = false
+                snackbar?.show("Tanggal kiriman berikutnya disimpan")
             }
         )
     }
 
+    // Dialog Peringatan Ubah Transaksi Lama (> 24 Jam)
+    uiState.oldTransactionWarning?.let { oldTx ->
+        OldTransactionWarningDialog(
+            formattedAmount = CurrencyFormatter.formatRupiah(oldTx.amount),
+            onConfirm = { viewModel.confirmEditOldTransaction() },
+            onDismiss = { viewModel.dismissOldTransactionWarning() }
+        )
+    }
+
     // Modal Bottom Sheet Edit Transaksi
-    if (uiState.transactionToEdit != null) {
-        val txToEdit = uiState.transactionToEdit!!
+    uiState.transactionToEdit?.let { txToEdit ->
         EditTransactionSheet(
             transaction = txToEdit,
             categories = uiState.categories,
@@ -395,65 +369,26 @@ fun HomeScreen(
         )
     }
 
-    // Cute Confirmation Dialog saat ingin menghapus transaksi
-    if (uiState.transactionToDelete != null) {
-        val toDelete = uiState.transactionToDelete!!
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissDeleteDialog() },
-            shape = RoundedCornerShape(28.dp),
-            title = {
-                Text(
-                    text = "Hapus Transaksi? 🥺",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AraTheme.colors.textStrong
-                )
-            },
-            text = {
-                Text(
-                    text = "Yakin ingin menghapus catatan senilai ${CurrencyFormatter.formatRupiah(toDelete.amount)}? Kakak masih bisa mengurungkannya sesaat setelah dihapus.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.confirmDeleteTransaction { deleted ->
-                            snackbar?.show(
-                                message = "Transaksi ${CurrencyFormatter.formatRupiah(deleted.amount)} dihapus",
-                                actionLabel = "Urungkan",
-                                onAction = { viewModel.restoreTransaction(deleted) }
-                            )
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.danger),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text(
-                        text = "Ya, Hapus",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+    // Konfirmasi hapus + Undo via Snackbar
+    uiState.transactionToDelete?.let { toDelete ->
+        DeleteTransactionDialog(
+            formattedAmount = CurrencyFormatter.formatRupiah(toDelete.amount),
+            onConfirm = {
+                viewModel.confirmDeleteTransaction { deleted ->
+                    snackbar?.show(
+                        message = "Transaksi ${CurrencyFormatter.formatRupiah(deleted.amount)} dihapus",
+                        actionLabel = "Urungkan",
+                        onAction = { viewModel.restoreTransaction(deleted) }
                     )
                 }
             },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.dismissDeleteDialog() },
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text(
-                        text = "Batal",
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
+            onDismiss = { viewModel.dismissDeleteDialog() }
         )
     }
 }
 
 /**
- * Tampilan Empty State estetis saat belum ada transaksi hari ini
+ * Empty state saat belum ada transaksi hari ini
  */
 @Composable
 private fun EmptyTransactionTodayState(
@@ -461,73 +396,16 @@ private fun EmptyTransactionTodayState(
     onSeeReportsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isAppInDarkTheme()
-
-    Column(
+    AraEmptyState(
+        icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+        title = if (isFiltered) "Tidak ada transaksi kategori ini hari ini" else "Belum ada transaksi hari ini",
+        description = if (isFiltered) {
+            "Pilih \"Semua\" atau kategori lain untuk melihat transaksi lainnya."
+        } else {
+            "Ketuk tombol + di kanan bawah untuk mencatat jajan atau pemasukan hari ini."
+        },
+        actionText = "Lihat riwayat di Laporan",
+        onAction = onSeeReportsClick,
         modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier.size(90.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            FloralDecoration(
-                size = 90.dp,
-                tint = PrimarySakuraPink,
-                opacity = 0.35f
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
-                contentDescription = null,
-                tint = AraTheme.colors.accent,
-                modifier = Modifier.size(36.dp)
-            )
-        }
-
-        Text(
-            text = if (isFiltered) "Tidak ada transaksi kategori ini hari ini 🍃" else "Belum ada transaksi hari ini 🍃",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = AraTheme.colors.textStrong,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = if (isFiltered) {
-                "Coba pilih kategori lain atau catat pengeluaran/pemasukan baru."
-            } else {
-                "Tekan tombol bunga di pojok kanan bawah untuk mencatat jajan atau pemasukan hari ini."
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
-        )
-
-        TextButton(
-            onClick = onSeeReportsClick,
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = "Lihat riwayat transaksi sebelumnya di Laporan",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = AraTheme.colors.accent,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                    contentDescription = null,
-                    tint = AraTheme.colors.accent,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-        }
-    }
+    )
 }

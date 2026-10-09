@@ -1,5 +1,28 @@
 package com.aramoney.app.presentation.splitbill
 
+import com.aramoney.app.presentation.components.AraConfirmDialog
+import com.aramoney.app.presentation.components.AraEmptyState
+import com.aramoney.app.presentation.components.AraScreenHeader
+import com.aramoney.app.presentation.components.AraSegmentedControl
+import com.aramoney.app.presentation.components.CuteFAB
+import com.aramoney.app.presentation.components.LocalAraSnackbar
+import com.aramoney.app.presentation.components.RupiahVisualTransformation
+import com.aramoney.app.presentation.components.araTextFieldColors
+import com.aramoney.app.presentation.theme.AraShape
+import com.aramoney.app.presentation.theme.HeroGradientEnd
+import com.aramoney.app.presentation.theme.HeroGradientStart
+import com.aramoney.app.util.AmountInput
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+
 import com.aramoney.app.presentation.theme.AraTheme
 
 import androidx.compose.animation.AnimatedVisibility
@@ -107,54 +130,21 @@ fun SplitBillScreen(
     viewModel: SplitBillViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbar = LocalAraSnackbar.current
     val isDark = isAppInDarkTheme()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
         topBar = {
-            // Sticky / Fixed Header Navbar
-            Surface(
-                color = Color.Transparent,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = "Buku Catatan 📒",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else DeepBerry
-                    )
-                    Text(
-                        text = "Hutang & Piutang",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AraTheme.colors.textStrong
-                    )
-                }
-            }
+            AraScreenHeader(overline = "Buku catatan", title = "Utang & Piutang")
         },
         floatingActionButton = {
-            FloatingActionButton(
+            CuteFAB(
                 onClick = { viewModel.openAddDialog() },
-                containerColor = AraTheme.colors.action,
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier
-                    .padding(bottom = 16.dp, end = 8.dp)
-                    .softShadow(elevation = 8.dp, shape = CircleShape)
-                    .semantics {
-                        role = Role.Button
-                        contentDescription = "Tambah catatan hutang atau piutang baru"
-                    }
-            ) {
-                Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
-            }
+                contentDescription = "Tambah catatan utang atau piutang",
+                modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
+            )
         }
     ) { innerPadding ->
         LazyColumn(
@@ -178,8 +168,7 @@ fun SplitBillScreen(
             item {
                 DebtDirectionTabs(
                     selectedTab = uiState.selectedTab,
-                    onTabSelected = { viewModel.onTabSelected(it) },
-                    isDark = isDark
+                    onTabSelected = { viewModel.onTabSelected(it) }
                 )
             }
 
@@ -191,7 +180,7 @@ fun SplitBillScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (uiState.selectedTab == "I_PAID_FOR_FRIEND") "Daftar Yang Berutang" else "Daftar Hutang Saya",
+                        text = if (uiState.selectedTab == "I_PAID_FOR_FRIEND") "Teman yang berutang ke Kakak" else "Utang Kakak ke teman",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AraTheme.colors.textStrong
@@ -212,7 +201,7 @@ fun SplitBillScreen(
                 item {
                     EmptyDebtState(
                         isFriendPaid = uiState.selectedTab == "FRIEND_PAID_FOR_ME",
-                        isDark = isDark
+                        onAddClick = { viewModel.openAddDialog() }
                     )
                 }
             } else {
@@ -220,17 +209,12 @@ fun SplitBillScreen(
                     items = uiState.personGroups,
                     key = { it.friendName }
                 ) { personGroup ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + slideInVertically { it / 2 },
-                        exit = fadeOut()
-                    ) {
-                        PersonDebtGroupCard(
-                            personGroup = personGroup,
-                            onClick = { viewModel.selectPerson(personGroup) },
-                            isDark = isDark
-                        )
-                    }
+                    PersonDebtGroupCard(
+                        personGroup = personGroup,
+                        onClick = { viewModel.selectPerson(personGroup) },
+                        isDark = isDark,
+                        modifier = Modifier.animateItem()
+                    )
                 }
             }
 
@@ -276,166 +260,128 @@ fun SplitBillScreen(
 
     // Modal Dialog Tambah Hutang/Piutang
     if (uiState.isAddDialogOpen) {
-        AddDebtDialog(
-            defaultDirection = uiState.selectedTab,
-            initialFriendName = uiState.initialFriendNameForAdd,
+        DebtFormDialog(
+            title = "Catat Utang / Piutang",
+            confirmText = "Simpan",
+            initialName = uiState.initialFriendNameForAdd,
+            initialAmount = "",
+            initialNote = "",
+            initialDirection = uiState.selectedTab,
             onDismiss = { viewModel.closeAddDialog() },
             onConfirm = { name, amount, note, direction ->
                 viewModel.addDebt(name, amount, note, direction)
-            },
-            isDark = isDark
+                snackbar?.show("Catatan untuk $name tersimpan")
+            }
         )
     }
 
     // Modal Dialog Ubah / Edit Hutang (Full CRUD - Bisa kapan saja!)
     if (uiState.debtToEdit != null) {
         val debt = uiState.debtToEdit!!
-        EditDebtDialog(
-            debt = debt,
+        DebtFormDialog(
+            title = "Ubah Catatan",
+            confirmText = "Simpan",
+            initialName = debt.friendName,
+            initialAmount = debt.amount.toLong().toString(),
+            initialNote = debt.note,
+            initialDirection = debt.direction,
             onDismiss = { viewModel.closeEditDialog() },
-            onConfirm = { updated ->
-                viewModel.updateDebt(updated)
-            },
-            isDark = isDark
+            onConfirm = { name, amount, note, direction ->
+                viewModel.updateDebt(debt.copy(friendName = name, amount = amount, note = note, direction = direction))
+                snackbar?.show("Perubahan catatan tersimpan")
+            }
         )
     }
 
-    // Modal Dialog Konfirmasi Pelunasan dengan Opsi Kas
-    if (uiState.debtToSettle != null) {
-        val debt = uiState.debtToSettle!!
+    // Konfirmasi pelunasan dengan opsi pencatatan ke kas
+    uiState.debtToSettle?.let { debt ->
         val isIncome = debt.direction == "I_PAID_FOR_FRIEND"
-
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissSettleDialog() },
-            shape = RoundedCornerShape(24.dp),
-            title = {
-                Text(
-                    text = "Selesaikan Pelunasan? ✨",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AraTheme.colors.textStrong
-                )
+        AraConfirmDialog(
+            title = "Tandai lunas?",
+            message = if (isIncome) {
+                "Tandai bahwa ${debt.friendName} sudah membayar ${CurrencyFormatter.formatRupiah(debt.amount)}."
+            } else {
+                "Tandai bahwa Kakak sudah melunasi utang ke ${debt.friendName} sebesar ${CurrencyFormatter.formatRupiah(debt.amount)}."
             },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text(
-                        text = if (isIncome) {
-                            "Tandai bahwa ${debt.friendName} sudah membayar ${CurrencyFormatter.formatRupiah(debt.amount)}."
-                        } else {
-                            "Tandai bahwa Anda sudah melunasi utang ke ${debt.friendName} sebesar ${CurrencyFormatter.formatRupiah(debt.amount)}."
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Surface(
-                        color = AraTheme.colors.surfaceCard,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.setAutoCreateTransaction(!uiState.isAutoCreateTransactionChecked)
-                                }
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Checkbox(
-                                checked = uiState.isAutoCreateTransactionChecked,
-                                onCheckedChange = { viewModel.setAutoCreateTransaction(it) },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = AraTheme.colors.action,
-                                    checkmarkColor = Color.White
-                                )
+            confirmText = "Tandai Lunas",
+            onConfirm = {
+                viewModel.confirmSettleDebt { settled ->
+                    snackbar?.show("Catatan ${settled.friendName} ditandai lunas")
+                }
+            },
+            onDismiss = { viewModel.dismissSettleDialog() },
+            extraContent = {
+                Surface(
+                    color = AraTheme.colors.surfaceCard,
+                    shape = AraShape.button,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = uiState.isAutoCreateTransactionChecked,
+                                role = Role.Checkbox,
+                                onValueChange = { viewModel.setAutoCreateTransaction(it) }
                             )
-                            Column {
-                                Text(
-                                    text = if (isIncome) "Masukkan ke Kas (Pemasukan)" else "Potong dari Kas (Pengeluaran)",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = AraTheme.colors.textStrong
-                                )
-                                Text(
-                                    text = if (isIncome) {
-                                        "Saldo kas aplikasi bertambah ${CurrencyFormatter.formatRupiah(debt.amount)}"
-                                    } else {
-                                        "Saldo kas aplikasi berkurang ${CurrencyFormatter.formatRupiah(debt.amount)}"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Checkbox(
+                            checked = uiState.isAutoCreateTransactionChecked,
+                            onCheckedChange = null,
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = AraTheme.colors.action,
+                                checkmarkColor = Color.White
+                            )
+                        )
+                        Column {
+                            Text(
+                                text = if (isIncome) "Catat sebagai pemasukan" else "Catat sebagai pengeluaran",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AraTheme.colors.textStrong
+                            )
+                            Text(
+                                text = if (isIncome) {
+                                    "Saldo bertambah ${CurrencyFormatter.formatRupiah(debt.amount)}"
+                                } else {
+                                    "Saldo berkurang ${CurrencyFormatter.formatRupiah(debt.amount)}"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.confirmSettleDebt() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Ya, Selesaikan", fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.dismissSettleDialog() },
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Batal", color = MaterialTheme.colorScheme.onSurface)
-                }
             }
         )
     }
 
-    // Modal Dialog Konfirmasi Hapus Hutang
-    if (uiState.debtToDelete != null) {
-        val debt = uiState.debtToDelete!!
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissDeleteDialog() },
-            shape = RoundedCornerShape(24.dp),
-            title = {
-                Text(
-                    text = "Hapus Catatan? 🥺",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AraTheme.colors.textStrong
-                )
-            },
-            text = {
-                Text(
-                    text = "Yakin ingin menghapus catatan ${CurrencyFormatter.formatRupiah(debt.amount)} untuk ${debt.friendName}? Tindakan ini tidak dapat dibatalkan.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.confirmDeleteDebt() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.danger),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Ya, Hapus", fontWeight = FontWeight.Bold, color = Color.White)
+    // Konfirmasi hapus + Undo
+    uiState.debtToDelete?.let { debt ->
+        AraConfirmDialog(
+            title = "Hapus catatan?",
+            message = "Catatan ${CurrencyFormatter.formatRupiah(debt.amount)} untuk ${debt.friendName} akan dihapus. Kakak masih bisa mengurungkannya sesaat setelah dihapus.",
+            confirmText = "Hapus",
+            isDestructive = true,
+            onConfirm = {
+                viewModel.confirmDeleteDebt { deleted ->
+                    snackbar?.show(
+                        message = "Catatan ${deleted.friendName} dihapus",
+                        actionLabel = "Urungkan",
+                        onAction = { viewModel.restoreDebt(deleted) }
+                    )
                 }
             },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.dismissDeleteDialog() },
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Batal", color = MaterialTheme.colorScheme.onSurface)
-                }
-            }
+            onDismiss = { viewModel.dismissDeleteDialog() }
         )
     }
 }
 
 /**
- * Hero Card Ringkasan Total Hutang / Piutang
+ * Hero Card Ringkasan Total Utang / Piutang
  */
 @Composable
 private fun DebtSummaryHeroCard(
@@ -446,10 +392,11 @@ private fun DebtSummaryHeroCard(
     modifier: Modifier = Modifier
 ) {
     val isIPaid = direction == "I_PAID_FOR_FRIEND"
+    // Gradien gelap yang sama dengan Hero Beranda agar teks putih tetap kontras (WCAG AA)
     val gradientColors = if (isIPaid) {
-        listOf(PrimarySakuraPink, SecondaryLavender)
+        listOf(HeroGradientStart, HeroGradientEnd)
     } else {
-        listOf(SecondaryLavender, PrimarySakuraPink.copy(alpha = 0.8f))
+        listOf(HeroGradientEnd, HeroGradientStart)
     }
 
     Surface(
@@ -470,7 +417,7 @@ private fun DebtSummaryHeroCard(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = if (isIPaid) "Total Piutang Belum Lunas 💸" else "Total Utang yang Harus Dibayar 🧾",
+                    text = if (isIPaid) "Total piutang belum lunas" else "Total utang yang harus dibayar",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Medium,
                     color = Color.White.copy(alpha = 0.9f)
@@ -487,7 +434,7 @@ private fun DebtSummaryHeroCard(
                     text = if (unsettledAmount > 0) {
                         if (isIPaid) "Ada $activeDebtorsCount orang yang belum melunasi" else "Ada $activeDebtorsCount orang yang menunggu pelunasan"
                     } else {
-                        "Semua catatan sudah beres lunas! ✨"
+                        "Semua catatan sudah lunas!"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.85f)
@@ -503,63 +450,18 @@ private fun DebtSummaryHeroCard(
 @Composable
 private fun DebtDirectionTabs(
     selectedTab: String,
-    onTabSelected: (String) -> Unit,
-    isDark: Boolean
+    onTabSelected: (String) -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = AraTheme.colors.surfaceCard
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            val isFriendOwesMe = selectedTab == "I_PAID_FOR_FRIEND"
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onTabSelected("I_PAID_FOR_FRIEND") },
-                shape = RoundedCornerShape(12.dp),
-                color = if (isFriendOwesMe) AraTheme.colors.action else Color.Transparent
-            ) {
-                Text(
-                    text = "🌸 Piutang (Mereka Berutang)",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (isFriendOwesMe) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isFriendOwesMe) Color.White else MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 10.dp)
-                )
-            }
-
-            val isIOweFriend = selectedTab == "FRIEND_PAID_FOR_ME"
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onTabSelected("FRIEND_PAID_FOR_ME") },
-                shape = RoundedCornerShape(12.dp),
-                color = if (isIOweFriend) AraTheme.colors.action else Color.Transparent
-            ) {
-                Text(
-                    text = "🌷 Utang (Saya Berutang)",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (isIOweFriend) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isIOweFriend) Color.White else MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 10.dp)
-                )
-            }
-        }
-    }
+    AraSegmentedControl(
+        options = listOf("I_PAID_FOR_FRIEND", "FRIEND_PAID_FOR_ME"),
+        selected = selectedTab,
+        onSelected = onTabSelected,
+        label = { if (it == "I_PAID_FOR_FRIEND") "Piutang" else "Utang" }
+    )
 }
 
 /**
- * Kartu per orang (Grouped by Person) yang menampilkan akumulasi hutang/piutang
+ * Kartu per orang (Grouped by Person) yang menampilkan akumulasi utang/piutang
  */
 @Composable
 private fun PersonDebtGroupCard(
@@ -938,314 +840,157 @@ private fun SubDebtItemCard(
 }
 
 /**
- * Dialog Tambah Catatan Hutang/Piutang Baru
+ * Form bersama Tambah & Ubah catatan utang/piutang.
+ * Nominal diformat Rupiah saat diketik, dibatasi maksimal, dengan aksi keyboard berurutan.
  */
 @Composable
-private fun AddDebtDialog(
-    defaultDirection: String,
-    initialFriendName: String,
+private fun DebtFormDialog(
+    title: String,
+    confirmText: String,
+    initialName: String,
+    initialAmount: String,
+    initialNote: String,
+    initialDirection: String,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, amount: Double, note: String, direction: String) -> Unit,
-    isDark: Boolean
+    onConfirm: (name: String, amount: Double, note: String, direction: String) -> Unit
 ) {
-    var friendName by remember { mutableStateOf(initialFriendName) }
-    var rawAmount by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
-    var direction by remember { mutableStateOf(defaultDirection) }
+    var friendName by remember { mutableStateOf(initialName) }
+    var rawAmount by remember { mutableStateOf(initialAmount) }
+    var note by remember { mutableStateOf(initialNote) }
+    var direction by remember { mutableStateOf(initialDirection) }
+    val focusManager = LocalFocusManager.current
 
-    val amountValue = rawAmount.toDoubleOrNull() ?: 0.0
-    val canSubmit = friendName.isNotBlank() && amountValue > 0.0
+    val amountValue = AmountInput.toAmount(rawAmount)
+    val amountError = AmountInput.validationMessage(rawAmount)
+    val disabledReason = when {
+        friendName.isBlank() -> "Isi nama teman dulu ya, Kak"
+        amountValue <= 0.0 -> "Isi nominalnya dulu ya, Kak"
+        amountError != null -> amountError
+        else -> null
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(24.dp),
+        shape = AraShape.dialog,
+        containerColor = AraTheme.colors.surfaceElevated,
         title = {
             Text(
-                text = "Catat Hutang / Piutang 🎀",
+                text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = AraTheme.colors.textStrong
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Direction selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val isPiutang = direction == "I_PAID_FOR_FRIEND"
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { direction = "I_PAID_FOR_FRIEND" },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isPiutang) AraTheme.colors.action else AraTheme.colors.surfaceCard
-                    ) {
-                        Text(
-                            text = "Piutang (Dia Utang)",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isPiutang) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isPiutang) Color.White else MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-
-                    val isUtang = direction == "FRIEND_PAID_FOR_ME"
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { direction = "FRIEND_PAID_FOR_ME" },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isUtang) AraTheme.colors.action else AraTheme.colors.surfaceCard
-                    ) {
-                        Text(
-                            text = "Utang (Saya Utang)",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isUtang) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isUtang) Color.White else MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-                }
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                AraSegmentedControl(
+                    options = listOf("I_PAID_FOR_FRIEND", "FRIEND_PAID_FOR_ME"),
+                    selected = direction,
+                    onSelected = { direction = it },
+                    label = { if (it == "I_PAID_FOR_FRIEND") "Dia utang ke Kakak" else "Kakak utang ke dia" }
+                )
 
                 OutlinedTextField(
                     value = friendName,
-                    onValueChange = { friendName = it },
-                    label = { Text("Nama Teman") },
-                    placeholder = { Text("Contoh: Nabila, Kak Siska") },
+                    onValueChange = { friendName = it.take(MAX_NAME_LENGTH) },
+                    label = { Text("Nama teman") },
+                    placeholder = { Text("Mis. Nabila") },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                    shape = AraShape.button,
+                    colors = araTextFieldColors(),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
                     value = rawAmount,
-                    onValueChange = { rawAmount = it.filter { c -> c.isDigit() } },
-                    label = { Text("Nominal (Rp)") },
-                    placeholder = { Text("Contoh: 25000") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    onValueChange = { rawAmount = AmountInput.sanitize(it) },
+                    label = { Text("Nominal") },
+                    prefix = { Text("Rp") },
+                    placeholder = { Text("25.000") },
+                    isError = amountError != null,
+                    supportingText = amountError?.let { { Text(it) } },
+                    visualTransformation = RupiahVisualTransformation,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = AraShape.button,
+                    colors = araTextFieldColors(),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
                     value = note,
-                    onValueChange = { note = it },
-                    label = { Text("Keterangan (Opsional)") },
-                    placeholder = { Text("Beli makan siang bareng, bensin, dll") },
+                    onValueChange = { note = it.take(MAX_NOTE_LENGTH) },
+                    label = { Text("Keterangan (opsional)") },
+                    placeholder = { Text("Mis. makan siang bareng") },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(friendName, amountValue, note, direction) },
-                enabled = canSubmit,
-                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text("Simpan 🌸", fontWeight = FontWeight.Bold, color = Color.White)
-            }
-        },
-        dismissButton = {
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text("Batal", color = MaterialTheme.colorScheme.onSurface)
-            }
-        }
-    )
-}
-
-/**
- * Dialog Ubah / Edit Catatan Hutang (CRUD - Dapat diubah kapan saja)
- */
-@Composable
-private fun EditDebtDialog(
-    debt: SplitBillDebtEntity,
-    onDismiss: () -> Unit,
-    onConfirm: (SplitBillDebtEntity) -> Unit,
-    isDark: Boolean
-) {
-    var friendName by remember(debt) { mutableStateOf(debt.friendName) }
-    var rawAmount by remember(debt) { mutableStateOf(debt.amount.toLong().toString()) }
-    var note by remember(debt) { mutableStateOf(debt.note) }
-    var direction by remember(debt) { mutableStateOf(debt.direction) }
-
-    val amountValue = rawAmount.toDoubleOrNull() ?: 0.0
-    val canSubmit = friendName.isNotBlank() && amountValue > 0.0
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(24.dp),
-        title = {
-            Text(
-                text = "Ubah Catatan Hutang ✏️",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = AraTheme.colors.textStrong
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Direction selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val isPiutang = direction == "I_PAID_FOR_FRIEND"
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { direction = "I_PAID_FOR_FRIEND" },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isPiutang) AraTheme.colors.action else AraTheme.colors.surfaceCard
-                    ) {
-                        Text(
-                            text = "Piutang (Dia Utang)",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isPiutang) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isPiutang) Color.White else MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-
-                    val isUtang = direction == "FRIEND_PAID_FOR_ME"
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { direction = "FRIEND_PAID_FOR_ME" },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isUtang) AraTheme.colors.action else AraTheme.colors.surfaceCard
-                    ) {
-                        Text(
-                            text = "Utang (Saya Utang)",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isUtang) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isUtang) Color.White else MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-                }
-
-                OutlinedTextField(
-                    value = friendName,
-                    onValueChange = { friendName = it },
-                    label = { Text("Nama Teman") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    shape = AraShape.button,
+                    colors = araTextFieldColors(),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
-                    value = rawAmount,
-                    onValueChange = { rawAmount = it.filter { c -> c.isDigit() } },
-                    label = { Text("Nominal (Rp)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text("Keterangan") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val updated = debt.copy(
-                        friendName = friendName.trim(),
-                        amount = amountValue,
-                        note = note.trim(),
-                        direction = direction
+                if (disabledReason != null && amountError == null) {
+                    Text(
+                        text = disabledReason,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    onConfirm(updated)
-                },
-                enabled = canSubmit,
-                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
-                shape = RoundedCornerShape(14.dp)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(friendName.trim(), amountValue, note.trim(), direction) },
+                enabled = disabledReason == null,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AraTheme.colors.action,
+                    contentColor = AraTheme.colors.onAction
+                ),
+                shape = AraShape.button,
+                modifier = Modifier.heightIn(min = 48.dp)
             ) {
-                Text("Simpan Perubahan 🌸", fontWeight = FontWeight.Bold, color = Color.White)
+                Text(confirmText, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text("Batal", color = MaterialTheme.colorScheme.onSurface)
+            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text("Batal", color = AraTheme.colors.textStrong)
             }
         }
     )
 }
 
+private const val MAX_NAME_LENGTH = 40
+private const val MAX_NOTE_LENGTH = 80
+
 /**
- * Empty state saat belum ada catatan hutang/piutang
+ * Empty state saat belum ada catatan utang/piutang
  */
 @Composable
 private fun EmptyDebtState(
     isFriendPaid: Boolean,
-    isDark: Boolean,
+    onAddClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    AraEmptyState(
+        icon = Icons.Rounded.VolunteerActivism,
+        title = if (isFriendPaid) "Kakak belum punya utang" else "Belum ada yang berutang ke Kakak",
+        description = "Catat saat Kakak menalangi atau ditalangi teman agar tidak lupa ditagih.",
+        actionText = "Catat sekarang",
+        onAction = onAddClick,
         modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier.size(90.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            FloralDecoration(
-                size = 90.dp,
-                tint = PrimarySakuraPink,
-                opacity = 0.35f
-            )
-            Icon(
-                imageVector = Icons.Rounded.VolunteerActivism,
-                contentDescription = null,
-                tint = AraTheme.colors.accent,
-                modifier = Modifier.size(36.dp)
-            )
-        }
-
-        Text(
-            text = if (isFriendPaid) "Belum ada utang ke orang lain 🍃" else "Tidak ada yang berutang padamu 🍃",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = AraTheme.colors.textStrong,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = "Tekan tombol + di pojok kanan bawah untuk mencatat hutang atau piutang baru.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
-        )
-    }
+    )
 }

@@ -2,13 +2,30 @@ package com.aramoney.app.domain.usecase
 
 import com.aramoney.app.data.local.entity.TransactionEntity
 import com.aramoney.app.domain.repository.TransactionRepository
+import com.aramoney.app.util.AmountInput
+import com.aramoney.app.util.CurrencyFormatter
 import javax.inject.Inject
 
 class AddTransactionUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository
 ) {
     companion object {
-        const val MAX_AMOUNT = 100_000_000.0 // Maksimum 100 juta rupiah
+        const val MAX_AMOUNT = AmountInput.MAX_AMOUNT.toDouble()
+
+        /**
+         * Validasi bersama untuk tambah & ubah transaksi.
+         * @return pesan error, atau null jika valid.
+         */
+        fun validate(amount: Double, categoryId: Long, timestamp: Long, now: Long = System.currentTimeMillis()): String? = when {
+            amount <= 0.0 -> "Nominal harus lebih dari Rp0 ya, Kak"
+            amount > MAX_AMOUNT -> "Nominal melebihi batas maksimal ${CurrencyFormatter.formatRupiah(MAX_AMOUNT)} ya, Kak"
+            categoryId <= 0 -> "Pilih salah satu kategori dulu ya, Kak"
+            // Toleransi 1 menit untuk perbedaan jam
+            timestamp > now + 60_000L -> "Tanggal transaksi tidak boleh di masa depan"
+            else -> null
+        }
+
+        fun normalizeNote(note: String?): String? = note?.trim()?.ifBlank { null }
     }
 
     suspend operator fun invoke(
@@ -19,16 +36,8 @@ class AddTransactionUseCase @Inject constructor(
         timestamp: Long = System.currentTimeMillis(),
         isSplitBillRelated: Boolean = false
     ): Result<Long> {
-        if (amount <= 0.0) {
-            return Result.failure(IllegalArgumentException("Nominal harus lebih dari Rp 0 ya, Kak! 🌸"))
-        }
-
-        if (amount > MAX_AMOUNT) {
-            return Result.failure(IllegalArgumentException("Nominal melebihi batas maksimal Rp100.000.000 ya, Kak! 🌸"))
-        }
-
-        if (categoryId <= 0) {
-            return Result.failure(IllegalArgumentException("Pilih salah satu kategori dulu ya, Kak! 🎀"))
+        validate(amount, categoryId, timestamp)?.let {
+            return Result.failure(IllegalArgumentException(it))
         }
 
         val transaction = TransactionEntity(
@@ -36,7 +45,7 @@ class AddTransactionUseCase @Inject constructor(
             type = type,
             categoryId = categoryId,
             timestamp = timestamp,
-            note = note?.trim()?.ifBlank { null },
+            note = normalizeNote(note),
             isSplitBillRelated = isSplitBillRelated
         )
 

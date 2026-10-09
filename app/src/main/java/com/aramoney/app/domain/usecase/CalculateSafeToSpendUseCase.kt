@@ -50,12 +50,17 @@ class CalculateSafeToSpendUseCase @Inject constructor() {
                 formattedDailyBudget = CurrencyFormatter.formatRupiah(0.0),
                 remainingDays = 0L,
                 totalBalance = saldoSaatIni,
-                message = "Waduh, dompet minus Kak! Yuk rem belanja dulu 😢💸",
+                message = "Waduh, dompet minus Kak! Yuk rem belanja dulu.",
                 dailyAverageExpense = dailyAverageExpense,
                 todayExpense = todayExpense,
                 remainingTodayBudget = 0.0,
                 dailyTargetBudget = effectiveTarget
             )
+        }
+
+        // Edge Case 3: Tanggal kiriman yang tersimpan sudah lewat → minta pengguna memperbarui
+        if (tanggalKirimanBerikutnya != null && tanggalKirimanBerikutnya.isBefore(today)) {
+            return SafeToSpendState.NeedsDateUpdate(totalBalance = saldoSaatIni)
         }
 
         // Hitung Daya Tahan (Financial Runway) dalam hari

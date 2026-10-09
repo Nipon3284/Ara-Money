@@ -1,13 +1,8 @@
 package com.aramoney.app.presentation.onboarding
 
-import com.aramoney.app.presentation.theme.AraTheme
-
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import com.aramoney.app.presentation.theme.isAppInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,29 +11,31 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Celebration
 import androidx.compose.material.icons.rounded.Savings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,39 +45,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
 import com.aramoney.app.R
+import com.aramoney.app.presentation.components.AraPrimaryButton
+import com.aramoney.app.presentation.components.DailyTargetPicker
 import com.aramoney.app.presentation.components.FloralDecoration
 import com.aramoney.app.presentation.components.HansaraWatermark
+import com.aramoney.app.presentation.components.RupiahVisualTransformation
 import com.aramoney.app.presentation.components.SakuraBackground
-import com.aramoney.app.presentation.theme.DeepBerry
-import com.aramoney.app.presentation.theme.DeepBerryDark
-import com.aramoney.app.presentation.theme.ErrorSoftRed
+import com.aramoney.app.presentation.components.TodayOrFutureSelectableDates
+import com.aramoney.app.presentation.components.araTextFieldColors
+import com.aramoney.app.presentation.theme.AraShape
+import com.aramoney.app.presentation.theme.AraTheme
 import com.aramoney.app.presentation.theme.PrimarySakuraPink
-import com.aramoney.app.presentation.theme.PrimarySakuraPinkLight
 import com.aramoney.app.presentation.theme.SecondaryLavender
-import com.aramoney.app.presentation.theme.SurfaceCard
-import com.aramoney.app.presentation.theme.SurfaceCardDark
-import com.aramoney.app.presentation.theme.SurfaceElevated
-import com.aramoney.app.presentation.theme.SurfaceElevatedDark
-import com.aramoney.app.presentation.theme.TextPrimaryDark
 import com.aramoney.app.presentation.theme.softShadow
 import com.aramoney.app.util.CurrencyFormatter
 import com.aramoney.app.util.DateTimeUtil
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
     onFinishOnboarding: () -> Unit,
@@ -88,127 +85,141 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isDark = isAppInDarkTheme()
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val stepCount = OnboardingViewModel.STEP_COUNT
+    val pagerState = rememberPagerState(pageCount = { stepCount })
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val currentStep = pagerState.currentPage
 
     LaunchedEffect(uiState.isCompleted) {
-        if (uiState.isCompleted) {
-            onFinishOnboarding()
-        }
+        if (uiState.isCompleted) onFinishOnboarding()
     }
 
+    fun goTo(page: Int) {
+        focusManager.clearFocus()
+        coroutineScope.launch { pagerState.animateScrollToPage(page) }
+    }
+
+    // Tombol Back sistem kembali ke langkah sebelumnya, bukan keluar aplikasi
+    BackHandler(enabled = currentStep > 0) { goTo(currentStep - 1) }
+
+    val validation = uiState.validationFor(currentStep)
+    val isLastPage = currentStep == stepCount - 1
+
     SakuraBackground(modifier = modifier) {
-        Scaffold(
-            containerColor = Color.Transparent
-        ) { innerPadding ->
+        Scaffold(containerColor = Color.Transparent) { innerPadding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 24.dp, vertical = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+                    .imePadding()
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Indikator Pager Dots (3 titik pastel)
+                // Baris atas: tombol kembali + indikator langkah
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    repeat(3) { index ->
-                        val isCurrent = pagerState.currentPage == index
-                        Box(
-                            modifier = Modifier
-                                .size(if (isCurrent) 24.dp else 10.dp, 10.dp)
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(
-                                    if (isCurrent) PrimarySakuraPink else PrimarySakuraPink.copy(alpha = 0.25f)
+                    Box(modifier = Modifier.size(48.dp)) {
+                        if (currentStep > 0) {
+                            IconButton(onClick = { goTo(currentStep - 1) }) {
+                                Icon(
+                                    Icons.AutoMirrored.Rounded.ArrowBack,
+                                    contentDescription = "Kembali ke langkah sebelumnya",
+                                    tint = AraTheme.colors.textStrong
                                 )
-                        )
+                            }
+                        }
                     }
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "Langkah ${currentStep + 1} dari $stepCount"
+                            },
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                    ) {
+                        repeat(stepCount) { index ->
+                            val isCurrent = currentStep == index
+                            Box(
+                                modifier = Modifier
+                                    .size(if (isCurrent) 24.dp else 10.dp, 10.dp)
+                                    .clip(RoundedCornerShape(5.dp))
+                                    .background(
+                                        if (index <= currentStep) PrimarySakuraPink else PrimarySakuraPink.copy(alpha = 0.25f)
+                                    )
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.size(48.dp))
                 }
 
-                // Konten 3 Langkah HorizontalPager
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    userScrollEnabled = false // Navigasi melalui tombol agar teratur
+                    userScrollEnabled = false // Navigasi via tombol agar validasi tiap langkah terjaga
                 ) { page ->
                     when (page) {
                         0 -> StepWelcome(
                             userName = uiState.userName,
-                            onNameChange = { viewModel.onUserNameChanged(it) },
-                            isDark = isDark
+                            onNameChange = viewModel::onUserNameChanged,
+                            onNext = { if (uiState.validationFor(0) == null) goTo(1) }
                         )
                         1 -> StepInitialBalance(
                             balanceText = uiState.initialBalanceText,
-                            onBalanceChange = { viewModel.onInitialBalanceChanged(it) },
-                            isDark = isDark
+                            onBalanceChange = viewModel::onInitialBalanceChanged,
+                            onNext = { if (uiState.validationFor(1) == null) goTo(2) }
                         )
                         2 -> StepDailyTargetBudget(
-                            selectedPreset = uiState.dailyTargetBudget,
+                            selectedPreset = uiState.dailyTargetPreset,
                             customBudgetText = uiState.customDailyBudgetText,
                             initialBalance = uiState.initialBalance,
-                            onPresetSelected = { viewModel.onDailyTargetPresetSelected(it) },
-                            onCustomBudgetChange = { viewModel.onCustomDailyBudgetChanged(it) },
-                            isDark = isDark
+                            activeTarget = uiState.effectiveDailyTarget,
+                            onPresetSelected = viewModel::onDailyTargetPresetSelected,
+                            onCustomBudgetChange = viewModel::onCustomDailyBudgetChanged
+                        )
+                        3 -> StepAllowanceDate(
+                            selectedDate = uiState.nextAllowanceDate,
+                            initialBalance = uiState.initialBalance,
+                            onDateSelected = viewModel::onNextAllowanceDateChanged
                         )
                     }
                 }
 
-                // Pesan Error jika ada
-                if (uiState.errorMessage != null) {
+                // Alasan tombol nonaktif
+                if (validation != null) {
                     Text(
-                        text = uiState.errorMessage!!,
-                        color = AraTheme.colors.danger,
+                        text = validation,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
 
-                // Tombol Navigasi Lanjut / Selesai
-                val isLastPage = pagerState.currentPage == 2
-                val canProceed = when (pagerState.currentPage) {
-                    0 -> uiState.isStep1Valid
-                    1 -> uiState.isStep2Valid
-                    2 -> uiState.isStep3Valid
-                    else -> true
-                }
-
-                Button(
+                AraPrimaryButton(
+                    text = if (isLastPage) "Mulai Kelola Keuangan" else "Lanjut",
                     onClick = {
-                        if (isLastPage) {
-                            viewModel.completeOnboarding()
-                        } else {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            }
-                        }
+                        if (isLastPage) viewModel.completeOnboarding() else goTo(currentStep + 1)
                     },
-                    enabled = canProceed,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .softShadow(
-                            elevation = if (canProceed) 8.dp else 0.dp,
-                            shape = RoundedCornerShape(20.dp),
-                            shadowColor = PrimarySakuraPink.copy(alpha = 0.40f)
-                        ),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AraTheme.colors.action,
-                        disabledContainerColor = AraTheme.colors.disabledContainer
-                    )
-                ) {
-                    Text(
-                        text = if (isLastPage) "Mulai Kelola Keuangan 🌸" else "Lanjut ✨",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (canProceed) Color.White else Color(0xFF9E8B95)
-                    )
+                    enabled = validation == null,
+                    isLoading = uiState.isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (isLastPage) {
+                    TextButton(
+                        onClick = { viewModel.completeOnboarding(skipAllowanceDate = true) },
+                        enabled = !uiState.isSaving,
+                        modifier = Modifier.heightIn(min = 48.dp)
+                    ) {
+                        Text("Lewati, atur nanti di Pengaturan", color = AraTheme.colors.accent)
+                    }
                 }
             }
         }
@@ -216,10 +227,29 @@ fun OnboardingScreen(
 }
 
 @Composable
+private fun StepTitle(title: String, subtitle: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.Bold,
+        color = AraTheme.colors.textStrong,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.semantics { heading() }
+    )
+    Text(
+        text = subtitle,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 8.dp)
+    )
+}
+
+@Composable
 private fun StepWelcome(
     userName: String,
     onNameChange: (String) -> Unit,
-    isDark: Boolean
+    onNext: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -229,34 +259,18 @@ private fun StepWelcome(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Box(
-            modifier = Modifier.size(110.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.app_logo),
-                contentDescription = "Ara Money Mascot",
-                modifier = Modifier
-                    .size(105.dp)
-                    .softShadow(elevation = 8.dp, shape = RoundedCornerShape(28.dp))
-                    .clip(RoundedCornerShape(28.dp))
-            )
-        }
-
-        Text(
-            text = "Selamat Datang di Ara Money! 🌸",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = AraTheme.colors.textStrong,
-            textAlign = TextAlign.Center
+        Image(
+            painter = painterResource(id = R.drawable.app_logo),
+            contentDescription = null,
+            modifier = Modifier
+                .size(105.dp)
+                .softShadow(elevation = 8.dp, shape = RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(28.dp))
         )
 
-        Text(
-            text = "Teman setia mahasiswi untuk atur jajan, nabung, dan bebas cemas tanggal tua.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
+        StepTitle(
+            title = "Selamat datang di Ara Money",
+            subtitle = "Teman setia mahasiswi untuk atur jajan, menabung, dan bebas cemas di akhir bulan."
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -264,21 +278,20 @@ private fun StepWelcome(
         OutlinedTextField(
             value = userName,
             onValueChange = onNameChange,
-            label = { Text("Nama Panggilanmu") },
-            placeholder = { Text("Contoh: Ara / Clara") },
+            label = { Text("Nama panggilan") },
+            placeholder = { Text("Mis. Ara") },
             singleLine = true,
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AraTheme.colors.accent,
-                focusedContainerColor = AraTheme.colors.surfaceElevated,
-                unfocusedContainerColor = AraTheme.colors.surfaceElevated
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
             ),
+            keyboardActions = KeyboardActions(onNext = { onNext() }),
+            shape = AraShape.button,
+            colors = araTextFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
 
-        HansaraWatermark(
-            modifier = Modifier.padding(top = 6.dp)
-        )
+        HansaraWatermark(modifier = Modifier.padding(top = 6.dp))
     }
 }
 
@@ -286,7 +299,7 @@ private fun StepWelcome(
 private fun StepInitialBalance(
     balanceText: String,
     onBalanceChange: (String) -> Unit,
-    isDark: Boolean
+    onNext: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -296,86 +309,44 @@ private fun StepInitialBalance(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Box(
-            modifier = Modifier.size(110.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.size(110.dp), contentAlignment = Alignment.Center) {
             FloralDecoration(size = 110.dp, tint = SecondaryLavender, opacity = 0.45f)
-            Icon(
-                imageVector = Icons.Rounded.Savings,
-                contentDescription = null,
-                tint = AraTheme.colors.berry,
-                modifier = Modifier.size(44.dp)
-            )
+            Icon(Icons.Rounded.Savings, contentDescription = null, tint = AraTheme.colors.berry, modifier = Modifier.size(44.dp))
         }
 
-        Text(
-            text = "Berapa Uang Sakumu Saat Ini? 💰",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = AraTheme.colors.textStrong,
-            textAlign = TextAlign.Center
+        StepTitle(
+            title = "Berapa uang sakumu saat ini?",
+            subtitle = "Masukkan total saldo di rekening dan dompetmu hari ini. Boleh Rp0 kalau belum ada."
         )
-
-        Text(
-            text = "Masukkan total sisa saldo di rekening atau dompet fisikmu hari ini.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
-        // Live Preview Format Rupiah
-        val amount = balanceText.toDoubleOrNull() ?: 0.0
-        Surface(
-            color = AraTheme.colors.surfaceCard,
-            shape = RoundedCornerShape(18.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = CurrencyFormatter.formatRupiah(amount),
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold,
-                color = AraTheme.colors.expense,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(vertical = 14.dp)
-            )
-        }
 
         OutlinedTextField(
             value = balanceText,
             onValueChange = onBalanceChange,
-            label = { Text("Nominal Saldo Awal (Rp)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            label = { Text("Saldo saat ini") },
+            prefix = { Text("Rp") },
+            placeholder = { Text("500.000") },
+            visualTransformation = RupiahVisualTransformation,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { onNext() }),
             singleLine = true,
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AraTheme.colors.accent,
-                focusedContainerColor = AraTheme.colors.surfaceElevated,
-                unfocusedContainerColor = AraTheme.colors.surfaceElevated
-            ),
+            textStyle = MaterialTheme.typography.headlineSmall,
+            shape = AraShape.button,
+            colors = araTextFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StepDailyTargetBudget(
-    selectedPreset: Double,
+    selectedPreset: Long?,
     customBudgetText: String,
     initialBalance: Double,
-    onPresetSelected: (Double) -> Unit,
-    onCustomBudgetChange: (String) -> Unit,
-    isDark: Boolean
+    activeTarget: Double,
+    onPresetSelected: (Long) -> Unit,
+    onCustomBudgetChange: (String) -> Unit
 ) {
-    val presets = listOf(20_000.0, 30_000.0, 50_000.0)
-    val isCustom = customBudgetText.isNotBlank()
-    val activeTarget = customBudgetText.toDoubleOrNull() ?: selectedPreset
-
-    val estimatedDays = if (activeTarget > 0 && initialBalance > 0) {
-        (initialBalance / activeTarget).toLong()
-    } else 0L
+    val estimatedDays = if (activeTarget > 0 && initialBalance > 0) (initialBalance / activeTarget).toLong() else 0L
 
     Column(
         modifier = Modifier
@@ -385,101 +356,96 @@ private fun StepDailyTargetBudget(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Target Jajan Harianmu? 🌸",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = AraTheme.colors.textStrong,
-            textAlign = TextAlign.Center
+        StepTitle(
+            title = "Target jajan harianmu?",
+            subtitle = "Batas jajan per hari yang nyaman. Dipakai untuk menghitung jatah hari ini dan berapa lama saldo bertahan."
         )
 
-        Text(
-            text = "Batas jajan harian yang nyaman buat kamu untuk mengukur daya tahan saldo dompet (Financial Runway).",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+        DailyTargetPicker(
+            selectedPreset = selectedPreset,
+            rawCustom = customBudgetText,
+            onPresetSelected = onPresetSelected,
+            onCustomChanged = onCustomBudgetChange
         )
 
-        Text(
-            text = "Pilih Rekomendasi Target:",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = AraTheme.colors.textStrong,
-            modifier = Modifier.align(Alignment.Start)
+        if (initialBalance > 0 && activeTarget > 0) {
+            EstimateCard(
+                title = "Perkiraan daya tahan saldo",
+                body = "Dengan saldo ${CurrencyFormatter.formatRupiah(initialBalance)} dan target " +
+                    "${CurrencyFormatter.formatRupiah(activeTarget)}/hari, saldo Kakak cukup untuk sekitar $estimatedDays hari."
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StepAllowanceDate(
+    selectedDate: LocalDate?,
+    initialBalance: Double,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate?.let { DateTimeUtil.localDateToUtcMillis(it) },
+        selectableDates = TodayOrFutureSelectableDates
+    )
+    LaunchedEffect(state.selectedDateMillis) {
+        state.selectedDateMillis?.let { onDateSelected(DateTimeUtil.utcMillisToLocalDate(it)) }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = AraTheme.colors.accent, modifier = Modifier.size(40.dp))
+        StepTitle(
+            title = "Kapan uang kiriman berikutnya?",
+            subtitle = "Supaya Ara bisa mengingatkan kalau saldo diperkirakan habis sebelum kiriman datang."
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Surface(
+            shape = AraShape.card,
+            color = AraTheme.colors.surfaceElevated,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            presets.forEach { preset ->
-                val isSelected = !isCustom && selectedPreset == preset
-                Surface(
-                    onClick = { onPresetSelected(preset) },
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (isSelected) AraTheme.colors.action else AraTheme.colors.surfaceCard,
-                    border = BorderStroke(
-                        1.2.dp,
-                        if (isSelected) PrimarySakuraPink else AraTheme.colors.border
-                    ),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = CurrencyFormatter.formatRupiah(preset),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color.White else AraTheme.colors.textStrong
-                        )
-                    }
-                }
-            }
+            DatePicker(state = state, title = null, headline = null, showModeToggle = false)
         }
 
-        OutlinedTextField(
-            value = customBudgetText,
-            onValueChange = onCustomBudgetChange,
-            label = { Text("Atau Isi Nominal Kustom (Rp/hari)") },
-            placeholder = { Text("Contoh: 35000") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AraTheme.colors.accent,
-                focusedLabelColor = AraTheme.colors.accent
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        // Kartu Estimasi Runway Interaktif
-        if (initialBalance > 0) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .softShadow(elevation = 3.dp, shape = RoundedCornerShape(18.dp)),
-                shape = RoundedCornerShape(18.dp),
-                color = if (isDark) Color(0xFF38233D) else Color(0xFFFFF0F5)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = "✨ Estimasi Daya Tahan Saldo",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AraTheme.colors.accent
-                    )
-                    Text(
-                        text = "Dengan saldo awal ${CurrencyFormatter.formatRupiah(initialBalance)} dan target ${CurrencyFormatter.formatRupiah(activeTarget)}/hari, saldo Kakak diperkirakan cukup untuk ~$estimatedDays hari ke depan! 🎀",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AraTheme.colors.textStrong
-                    )
+        if (selectedDate != null) {
+            val days = ChronoUnit.DAYS.between(LocalDate.now(), selectedDate)
+            EstimateCard(
+                title = "${DateTimeUtil.formatLocalDate(selectedDate)} • $days hari lagi",
+                body = if (initialBalance > 0 && days > 0) {
+                    "Supaya cukup sampai hari itu, jatah aman Kakak sekitar ${CurrencyFormatter.formatRupiah(initialBalance / days)}/hari."
+                } else {
+                    "Tanggal ini bisa diubah kapan saja di Pengaturan."
                 }
-            }
+            )
+        }
+    }
+}
+
+@Composable
+private fun EstimateCard(title: String, body: String) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .softShadow(elevation = 3.dp, shape = AraShape.card),
+        shape = AraShape.card,
+        color = AraTheme.colors.selectedContainer
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = AraTheme.colors.onSelectedContainer
+            )
+            Text(text = body, style = MaterialTheme.typography.bodySmall, color = AraTheme.colors.onSelectedContainer)
         }
     }
 }

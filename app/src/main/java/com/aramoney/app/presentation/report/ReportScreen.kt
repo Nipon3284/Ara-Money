@@ -62,6 +62,20 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.aramoney.app.presentation.components.LocalAraSnackbar
+import com.aramoney.app.presentation.components.AraScreenHeader
+import com.aramoney.app.presentation.components.AraEmptyState
+import com.aramoney.app.presentation.components.TransactionListItem
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
+import com.aramoney.app.presentation.components.PastOrTodaySelectableDates
+import com.aramoney.app.util.DateTimeUtil
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
+import com.aramoney.app.presentation.components.AraSegmentedControl
+import com.aramoney.app.presentation.components.DeleteTransactionDialog
+import com.aramoney.app.presentation.components.OldTransactionWarningDialog
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -127,9 +141,6 @@ fun ReportScreen(
         uiState.selectedCategoryId
     ) { mutableIntStateOf(20) }
 
-    val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("id", "ID"))
-    val dayFormatter = DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale("id", "ID"))
-    val rangeDateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale("id", "ID"))
 
     // Flat list approach: Pre-compute sealed class list for true lazy rendering
     val sortedTransactions = remember(uiState.filteredTransactions) {
@@ -163,32 +174,7 @@ fun ReportScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
         topBar = {
-            // Sticky / Fixed Header Navbar
-            Surface(
-                color = Color.Transparent,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = "Evaluasi Keuangan 📊",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else DeepBerry
-                    )
-
-                    Text(
-                        text = "Laporan Keuangan",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AraTheme.colors.textStrong
-                    )
-                }
-            }
+            AraScreenHeader(overline = "Evaluasi keuangan", title = "Laporan")
         }
     ) { innerPadding ->
         LazyColumn(
@@ -205,39 +191,12 @@ fun ReportScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // 3 Mode Pilihan Filter: Bulanan, Harian, Rentang Tanggal
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = AraTheme.colors.surfaceCard
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            ReportPeriodType.entries.forEach { type ->
-                                val isSelected = uiState.periodType == type
-                                Surface(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable { viewModel.setPeriodType(type) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (isSelected) AraTheme.colors.action else Color.Transparent
-                                ) {
-                                    Text(
-                                        text = type.label,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(vertical = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    AraSegmentedControl(
+                        options = ReportPeriodType.entries,
+                        selected = uiState.periodType,
+                        onSelected = { viewModel.setPeriodType(it) },
+                        label = { it.label }
+                    )
 
                     // Baris Navigasi Tanggal sesuai Mode yang Dipilih
                     Surface(
@@ -268,7 +227,7 @@ fun ReportScreen(
                                     }
 
                                     Text(
-                                        text = uiState.selectedYearMonth.format(monthFormatter),
+                                        text = DateTimeUtil.formatMonth(uiState.selectedYearMonth),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = AraTheme.colors.textStrong
@@ -320,7 +279,7 @@ fun ReportScreen(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = uiState.selectedDate.format(dayFormatter),
+                                            text = DateTimeUtil.formatDay(uiState.selectedDate),
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = AraTheme.colors.textStrong
@@ -359,7 +318,7 @@ fun ReportScreen(
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text(
-                                            text = "${uiState.customStartDate.format(rangeDateFormatter)} - ${uiState.customEndDate.format(rangeDateFormatter)}",
+                                            text = "${DateTimeUtil.formatShortLocalDate(uiState.customStartDate)} – ${DateTimeUtil.formatShortLocalDate(uiState.customEndDate)}",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = AraTheme.colors.textStrong
@@ -367,7 +326,7 @@ fun ReportScreen(
                                     }
 
                                     Text(
-                                        text = "Ubah 🗓️",
+                                        text = "Ubah",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = AraTheme.colors.accent,
                                         fontWeight = FontWeight.SemiBold
@@ -384,8 +343,7 @@ fun ReportScreen(
                 ReportStatCards(
                     totalExpense = uiState.reportData.totalExpense,
                     totalIncome = uiState.reportData.totalIncome,
-                    netSavings = uiState.reportData.netSavings,
-                    isDark = isDark
+                    netSavings = uiState.reportData.netSavings
                 )
             }
 
@@ -403,7 +361,7 @@ fun ReportScreen(
             // 4. Breakdown Kategori List Header
             item {
                 Text(
-                    text = "Rincian Pengeluaran per Kategori",
+                    text = "Pengeluaran per Kategori",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AraTheme.colors.textStrong
@@ -413,7 +371,7 @@ fun ReportScreen(
             // 5. Item Breakdown Kategori / Empty State
             if (uiState.reportData.categoryBreakdown.isEmpty()) {
                 item {
-                    EmptyReportState(isDark = isDark)
+                    EmptyReportState()
                 }
             } else {
                 items(
@@ -423,8 +381,7 @@ fun ReportScreen(
                     CategoryBreakdownItem(
                         item = item,
                         isSelected = item.categoryId == uiState.selectedCategoryId,
-                        onClick = { viewModel.onCategorySelected(item.categoryId) },
-                        isDark = isDark
+                        onClick = { viewModel.onCategorySelected(item.categoryId) }
                     )
                 }
             }
@@ -439,7 +396,7 @@ fun ReportScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (uiState.selectedCategoryId != null) "Transaksi Terfilter" else "Daftar Setiap Transaksi",
+                        text = if (uiState.selectedCategoryId != null) "Transaksi Terfilter" else "Semua Transaksi",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AraTheme.colors.textStrong
@@ -462,18 +419,11 @@ fun ReportScreen(
 
             if (totalTransactionsCount == 0) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 20.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Tidak ada transaksi pada periode ini 🍃",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    AraEmptyState(
+                        icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+                        title = "Tidak ada transaksi pada periode ini",
+                        description = if (uiState.selectedCategoryId != null) "Ketuk kategori yang sama sekali lagi untuk menghapus filter." else "Coba pilih periode lain."
+                    )
                 }
             } else {
                 // Flat list rendering: Single items() call = true lazy composition
@@ -497,18 +447,17 @@ fun ReportScreen(
                             DateSectionHeader(
                                 date = listItem.date,
                                 dailyTotalExpense = listItem.dailyTotalExpense,
-                                dailyTotalIncome = listItem.dailyTotalIncome,
-                                isDark = isDark
+                                dailyTotalIncome = listItem.dailyTotalIncome
                             )
                         }
                         is ReportListItem.TransactionRow -> {
                             val category = uiState.categories.find { it.id == listItem.transaction.categoryId }
-                            ReportTransactionRow(
+                            TransactionListItem(
                                 transaction = listItem.transaction,
                                 category = category,
                                 onClick = { viewModel.onTransactionClick(listItem.transaction) },
-                                onDeleteClick = { viewModel.requestDeleteTransaction(listItem.transaction) },
-                                isDark = isDark
+                                onDeleteRequest = { viewModel.requestDeleteTransaction(listItem.transaction) },
+                                showTimeOnly = true
                             )
                         }
                     }
@@ -541,7 +490,7 @@ fun ReportScreen(
                                 )
                                 Spacer(modifier = Modifier.size(6.dp))
                                 Text(
-                                    text = "Tampilkan $remaining Transaksi Lainnya 🌸",
+                                    text = "Tampilkan ${minOf(remaining, 30)} transaksi lagi (sisa $remaining)",
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = AraTheme.colors.accent
@@ -573,7 +522,7 @@ fun ReportScreen(
     // Modal DatePicker untuk Harian
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = uiState.selectedDate.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+            initialSelectedDateMillis = DateTimeUtil.localDateToUtcMillis(uiState.selectedDate),
         )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -587,7 +536,7 @@ fun ReportScreen(
                         showDatePicker = false
                     }
                 ) {
-                    Text("Pilih Tanggal", fontWeight = FontWeight.Bold, color = PrimarySakuraPink)
+                    Text("Pilih", fontWeight = FontWeight.Bold, color = AraTheme.colors.accent)
                 }
             },
             dismissButton = {
@@ -603,8 +552,8 @@ fun ReportScreen(
     // Modal DateRangePicker untuk Rentang Tanggal
     if (showDateRangePicker) {
         val dateRangePickerState = rememberDateRangePickerState(
-            initialSelectedStartDateMillis = uiState.customStartDate.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli(),
-            initialSelectedEndDateMillis = uiState.customEndDate.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+            initialSelectedStartDateMillis = DateTimeUtil.localDateToUtcMillis(uiState.customStartDate),
+            initialSelectedEndDateMillis = DateTimeUtil.localDateToUtcMillis(uiState.customEndDate),
         )
         DatePickerDialog(
             onDismissRequest = { showDateRangePicker = false },
@@ -621,7 +570,7 @@ fun ReportScreen(
                         showDateRangePicker = false
                     }
                 ) {
-                    Text("Terapkan", fontWeight = FontWeight.Bold, color = PrimarySakuraPink)
+                    Text("Terapkan", fontWeight = FontWeight.Bold, color = AraTheme.colors.accent)
                 }
             },
             dismissButton = {
@@ -635,65 +584,16 @@ fun ReportScreen(
     }
 
     // Dialog Peringatan Ubah Transaksi Lama (> 24 Jam)
-    if (uiState.oldTransactionWarning != null) {
-        val oldTx = uiState.oldTransactionWarning!!
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissOldTransactionWarning() },
-            shape = RoundedCornerShape(24.dp),
-            icon = {
-                Icon(
-                    imageVector = Icons.Rounded.WarningAmber,
-                    contentDescription = null,
-                    tint = AraTheme.colors.warning,
-                    modifier = Modifier.size(36.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "Transaksi Lama (> 24 Jam) ⚠️",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AraTheme.colors.textStrong,
-                    textAlign = TextAlign.Center
-                )
-            },
-            text = {
-                Text(
-                    text = "Transaksi senilai ${CurrencyFormatter.formatRupiah(oldTx.amount)} ini tercatat lebih dari 24 jam yang lalu. Mengubah transaksi lama dapat memengaruhi riwayat saldo masa lalu Kakak.\n\nApakah Kakak yakin tetap ingin mengubah transaksi ini?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.confirmEditOldTransaction() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "Tetap Ubah",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.dismissOldTransactionWarning() },
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "Batal",
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
+    uiState.oldTransactionWarning?.let { oldTx ->
+        OldTransactionWarningDialog(
+            formattedAmount = CurrencyFormatter.formatRupiah(oldTx.amount),
+            onConfirm = { viewModel.confirmEditOldTransaction() },
+            onDismiss = { viewModel.dismissOldTransactionWarning() }
         )
     }
 
     // Modal Bottom Sheet Edit Transaksi
-    if (uiState.transactionToEdit != null) {
-        val txToEdit = uiState.transactionToEdit!!
+    uiState.transactionToEdit?.let { txToEdit ->
         EditTransactionSheet(
             transaction = txToEdit,
             categories = uiState.categories,
@@ -710,59 +610,20 @@ fun ReportScreen(
         )
     }
 
-    // Konfirmasi Hapus Transaksi
-    if (uiState.transactionToDelete != null) {
-        val toDelete = uiState.transactionToDelete!!
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissDeleteDialog() },
-            shape = RoundedCornerShape(28.dp),
-            title = {
-                Text(
-                    text = "Hapus Transaksi? 🥺",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AraTheme.colors.textStrong
-                )
-            },
-            text = {
-                Text(
-                    text = "Yakin ingin menghapus catatan senilai ${CurrencyFormatter.formatRupiah(toDelete.amount)}? Kakak masih bisa mengurungkannya sesaat setelah dihapus.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.confirmDeleteTransaction { deleted ->
-                            snackbar?.show(
-                                message = "Transaksi ${CurrencyFormatter.formatRupiah(deleted.amount)} dihapus",
-                                actionLabel = "Urungkan",
-                                onAction = { viewModel.restoreTransaction(deleted) }
-                            )
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.danger),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text(
-                        text = "Ya, Hapus",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+    // Konfirmasi hapus + Undo via Snackbar
+    uiState.transactionToDelete?.let { toDelete ->
+        DeleteTransactionDialog(
+            formattedAmount = CurrencyFormatter.formatRupiah(toDelete.amount),
+            onConfirm = {
+                viewModel.confirmDeleteTransaction { deleted ->
+                    snackbar?.show(
+                        message = "Transaksi ${CurrencyFormatter.formatRupiah(deleted.amount)} dihapus",
+                        actionLabel = "Urungkan",
+                        onAction = { viewModel.restoreTransaction(deleted) }
                     )
                 }
             },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.dismissDeleteDialog() },
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text(
-                        text = "Batal",
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
+            onDismiss = { viewModel.dismissDeleteDialog() }
         )
     }
 }
@@ -775,22 +636,20 @@ private fun DateSectionHeader(
     date: LocalDate,
     dailyTotalExpense: Double,
     dailyTotalIncome: Double,
-    isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     val today = LocalDate.now()
-    val yesterday = today.minusDays(1)
-    val dayNameFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale("id", "ID"))
     val label = when (date) {
-        today -> "Hari Ini • ${date.format(dayNameFormatter)}"
-        yesterday -> "Kemarin • ${date.format(dayNameFormatter)}"
-        else -> date.format(dayNameFormatter)
+        today -> "Hari ini • ${DateTimeUtil.formatDayHeader(date)}"
+        today.minusDays(1) -> "Kemarin • ${DateTimeUtil.formatDayHeader(date)}"
+        else -> DateTimeUtil.formatDayHeader(date)
     }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 6.dp, bottom = 2.dp, start = 4.dp, end = 4.dp),
+            .padding(top = 6.dp, bottom = 2.dp, start = 4.dp, end = 4.dp)
+            .semantics(mergeDescendants = true) { heading() },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -798,171 +657,24 @@ private fun DateSectionHeader(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else DeepBerry
+            color = AraTheme.colors.berry,
+            modifier = Modifier.weight(1f, fill = false)
         )
-
-        if (dailyTotalExpense > 0.0) {
-            Text(
-                text = "-${CurrencyFormatter.formatRupiah(dailyTotalExpense)}",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = AraTheme.colors.expense
-            )
-        } else if (dailyTotalIncome > 0.0) {
-            Text(
-                text = "+${CurrencyFormatter.formatRupiah(dailyTotalIncome)}",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = AraTheme.colors.income
-            )
-        }
-    }
-}
-
-/**
- * Baris Transaksi Ramping & Ringan (Bebas Crash, Tanpa SwipeToDismissBox, Super Cepat)
- */
-@Composable
-private fun ReportTransactionRow(
-    transaction: TransactionEntity,
-    category: CategoryEntity?,
-    onClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    isDark: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val isIncome = transaction.type == "INCOME"
-    val iconColor = category?.tintColorHex?.let {
-        runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull()
-    } ?: PrimarySakuraPink
-
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale("id", "ID"))
-    val timeText = runCatching {
-        Instant.ofEpochMilli(transaction.timestamp)
-            .atZone(ZoneId.systemDefault())
-            .format(timeFormatter)
-    }.getOrDefault("")
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = AraTheme.colors.surfaceElevated,
-        tonalElevation = 1.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Icon Avatar Bulat Kategori
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(iconColor.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = getIconVector(category?.iconResName ?: "category"),
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(20.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (dailyTotalIncome > 0.0) {
+                Text(
+                    text = CurrencyFormatter.formatSigned(dailyTotalIncome, isIncome = true),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AraTheme.colors.income
                 )
             }
-
-            // Kategori, Catatan, dan Jam
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = category?.name ?: "Transaksi",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AraTheme.colors.textStrong,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-
-                    if (transaction.isSplitBillRelated && !DebtCategoryConstants.isSystemLocked(transaction.categoryId)) {
-                        Surface(
-                            color = PrimarySakuraPink.copy(alpha = 0.20f),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text(
-                                text = "Hutang",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = AraTheme.colors.berry,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (!transaction.note.isNullOrBlank()) {
-                        Text(
-                            text = transaction.note,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
-                    }
-
-                    Text(
-                        text = timeText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                }
-            }
-
-            // Nominal Transaksi
-            val amountColor = if (isIncome) {
-                AraTheme.colors.income
-            } else {
-                AraTheme.colors.expense
-            }
-            val prefix = if (isIncome) "+ " else "- "
-
-            Text(
-                text = "$prefix${CurrencyFormatter.formatRupiah(transaction.amount)}",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = amountColor
-            )
-
-            // Tombol Hapus Cepat
-            IconButton(
-                onClick = onDeleteClick,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Delete,
-                    contentDescription = "Hapus transaksi",
-                    tint = ErrorSoftRed.copy(alpha = 0.55f),
-                    modifier = Modifier.size(16.dp)
+            if (dailyTotalExpense > 0.0) {
+                Text(
+                    text = CurrencyFormatter.formatSigned(dailyTotalExpense, isIncome = false),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AraTheme.colors.expense
                 )
             }
         }
@@ -970,44 +682,38 @@ private fun ReportTransactionRow(
 }
 
 /**
- * 3 Kartu statistik ringkas: Pengeluaran, Pemasukan, dan Sisa Tabungan
+ * Kartu ringkasan: Pengeluaran & Pemasukan berdampingan, Sisa Saku penuh di bawahnya
+ * (tata letak 2+1 agar nominal panjang tidak terpotong).
  */
 @Composable
 private fun ReportStatCards(
     totalExpense: Double,
     totalIncome: Double,
-    netSavings: Double,
-    isDark: Boolean
+    netSavings: Double
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        // Pengeluaran
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            StatSummaryCard(
+                title = "Pengeluaran",
+                amount = totalExpense,
+                accentColor = AraTheme.colors.expense,
+                modifier = Modifier.weight(1f)
+            )
+            StatSummaryCard(
+                title = "Pemasukan",
+                amount = totalIncome,
+                accentColor = AraTheme.colors.income,
+                modifier = Modifier.weight(1f)
+            )
+        }
         StatSummaryCard(
-            title = "Pengeluaran",
-            amount = totalExpense,
-            accentColor = PrimarySakuraPink,
-            isDark = isDark,
-            modifier = Modifier.weight(1f)
-        )
-
-        // Pemasukan
-        StatSummaryCard(
-            title = "Pemasukan",
-            amount = totalIncome,
-            accentColor = AraTheme.colors.income,
-            isDark = isDark,
-            modifier = Modifier.weight(1f)
-        )
-
-        // Sisa / Tabungan
-        StatSummaryCard(
-            title = "Sisa Saku",
+            title = if (netSavings >= 0) "Sisa Saku (Pemasukan − Pengeluaran)" else "Defisit (Pengeluaran > Pemasukan)",
             amount = netSavings,
-            accentColor = SecondaryLavender,
-            isDark = isDark,
-            modifier = Modifier.weight(1f)
+            accentColor = if (netSavings >= 0) AraTheme.colors.berry else AraTheme.colors.danger,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
@@ -1017,7 +723,6 @@ private fun StatSummaryCard(
     title: String,
     amount: Double,
     accentColor: Color,
-    isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -1028,7 +733,8 @@ private fun StatSummaryCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(12.dp)
+                .semantics(mergeDescendants = true) {},
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
@@ -1038,10 +744,11 @@ private fun StatSummaryCard(
             )
             Text(
                 text = CurrencyFormatter.formatRupiah(amount),
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = accentColor,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -1073,7 +780,7 @@ private fun CustomDonutChartCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Komposisi Pengeluaran 🍩",
+                text = "Komposisi Pengeluaran",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AraTheme.colors.textStrong
@@ -1091,7 +798,7 @@ private fun CustomDonutChartCard(
                 "Diagram komposisi pengeluaran: belum ada data"
             } else {
                 "Diagram komposisi pengeluaran. " + categoryBreakdown.joinToString(", ") {
-                    "${it.categoryName} ${"%.0f".format(it.percentage)} persen"
+                    "${it.categoryName} ${CurrencyFormatter.formatPercent(it.percentage, 0)}"
                 }
             }
 
@@ -1175,12 +882,12 @@ private fun CustomDonutChartCard(
 private fun CategoryBreakdownItem(
     item: CategoryReportItem,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    isDark: Boolean
+    onClick: () -> Unit
 ) {
     val categoryColor = runCatching {
         Color(android.graphics.Color.parseColor(item.tintColorHex))
     }.getOrDefault(PrimarySakuraPink)
+    val percentText = CurrencyFormatter.formatPercent(item.percentage)
 
     Surface(
         modifier = Modifier
@@ -1190,9 +897,16 @@ private fun CategoryBreakdownItem(
                 shape = RoundedCornerShape(18.dp)
             )
             .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick),
+            .selectable(selected = isSelected, onClick = onClick)
+            .clearAndSetSemantics {
+                selected = isSelected
+                contentDescription = "${item.categoryName}, ${CurrencyFormatter.formatRupiah(item.totalAmount)}, " +
+                    "$percentText dari total, ${item.transactionCount} transaksi. " +
+                    if (isSelected) "Filter aktif" else "Ketuk untuk memfilter"
+            },
         shape = RoundedCornerShape(18.dp),
-        color = AraTheme.colors.surfaceElevated
+        color = if (isSelected) AraTheme.colors.selectedContainer else AraTheme.colors.surfaceElevated,
+        border = if (isSelected) BorderStroke(1.5.dp, PrimarySakuraPink) else null
     ) {
         Column(
             modifier = Modifier
@@ -1202,41 +916,38 @@ private fun CategoryBreakdownItem(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(categoryColor.copy(alpha = 0.20f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(categoryColor.copy(alpha = 0.20f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = getIconVector(item.iconResName),
-                            contentDescription = null,
-                            tint = categoryColor,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = getIconVector(item.iconResName),
+                        contentDescription = null,
+                        tint = categoryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
 
-                    Column {
-                        Text(
-                            text = item.categoryName,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = AraTheme.colors.textStrong
-                        )
-                        Text(
-                            text = "${item.transactionCount} transaksi",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.categoryName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = AraTheme.colors.textStrong,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${item.transactionCount} transaksi",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AraTheme.colors.textMuted
+                    )
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
@@ -1247,10 +958,10 @@ private fun CategoryBreakdownItem(
                         color = AraTheme.colors.textStrong
                     )
                     Text(
-                        text = String.format(Locale.US, "%.1f%%", item.percentage),
+                        text = percentText,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = categoryColor
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -1262,53 +973,20 @@ private fun CategoryBreakdownItem(
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
                 color = categoryColor,
-                trackColor = categoryColor.copy(alpha = 0.15f)
+                trackColor = categoryColor.copy(alpha = 0.15f),
+                drawStopIndicator = {}
             )
         }
     }
 }
 
 @Composable
-private fun EmptyReportState(isDark: Boolean) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 28.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier.size(80.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            FloralDecoration(
-                size = 80.dp,
-                tint = PrimarySakuraPink,
-                opacity = 0.35f
-            )
-            Icon(
-                imageVector = Icons.Rounded.DonutLarge,
-                contentDescription = null,
-                tint = AraTheme.colors.accent,
-                modifier = Modifier.size(34.dp)
-            )
-        }
-
-        Text(
-            text = "Belum ada pengeluaran di periode ini 🌸",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = AraTheme.colors.textStrong,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = "Catatan keuanganmu di periode ini masih bersih dan rapi!",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-    }
+private fun EmptyReportState() {
+    AraEmptyState(
+        icon = Icons.Rounded.DonutLarge,
+        title = "Belum ada pengeluaran di periode ini",
+        description = "Catatan keuangan Kakak di periode ini masih bersih dan rapi!"
+    )
 }
 
 /**

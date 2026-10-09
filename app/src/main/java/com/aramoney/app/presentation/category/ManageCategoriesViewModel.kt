@@ -1,4 +1,4 @@
-﻿package com.aramoney.app.presentation.category
+package com.aramoney.app.presentation.category
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -129,7 +129,7 @@ class ManageCategoriesViewModel @Inject constructor(
                 _dialogState.update {
                     it.copy(
                         categoryFormState = null,
-                        feedbackMessage = "Kategori '${name.trim()}' berhasil ditambahkan! 🎀"
+                        feedbackMessage = "Kategori '${name.trim()}' berhasil ditambahkan"
                     )
                 }
             } else {
@@ -151,7 +151,7 @@ class ManageCategoriesViewModel @Inject constructor(
                 _dialogState.update {
                     it.copy(
                         categoryFormState = null,
-                        feedbackMessage = "Kategori '${name.trim()}' berhasil diperbarui! ✨"
+                        feedbackMessage = "Kategori '${name.trim()}' berhasil diperbarui"
                     )
                 }
             }
@@ -174,7 +174,7 @@ class ManageCategoriesViewModel @Inject constructor(
                 it.copy(
                     categoryToDelete = null,
                     feedbackMessage = if (success) {
-                        "Kategori '${category.name}' berhasil dihapus! 🌸"
+                        "Kategori '${category.name}' berhasil dihapus"
                     } else {
                         "Gagal menghapus kategori. Minimal harus tersisa 1 kategori untuk ${if (category.isExpense) "Pengeluaran" else "Pemasukan"}."
                     }

@@ -197,13 +197,14 @@ class SplitBillViewModel @Inject constructor(
         _isAutoCreateTransactionChecked.value = checked
     }
 
-    fun confirmSettleDebt() {
+    fun confirmSettleDebt(onSettled: (SplitBillDebtEntity) -> Unit = {}) {
         val debt = _debtToSettle.value ?: return
         val autoCreate = _isAutoCreateTransactionChecked.value
 
         viewModelScope.launch {
             settleSplitBillUseCase(debt.id, autoCreate)
             _debtToSettle.value = null
+            onSettled(debt)
         }
     }
 
@@ -215,11 +216,19 @@ class SplitBillViewModel @Inject constructor(
         _debtToDelete.value = null
     }
 
-    fun confirmDeleteDebt() {
+    fun confirmDeleteDebt(onDeleted: (SplitBillDebtEntity) -> Unit = {}) {
         val debt = _debtToDelete.value ?: return
         viewModelScope.launch {
             splitBillRepository.deleteDebt(debt)
             _debtToDelete.value = null
+            onDeleted(debt)
+        }
+    }
+
+    /** Kembalikan catatan yang baru dihapus (aksi Undo Snackbar). */
+    fun restoreDebt(debt: SplitBillDebtEntity) {
+        viewModelScope.launch {
+            splitBillRepository.insertDebt(debt)
         }
     }
 }

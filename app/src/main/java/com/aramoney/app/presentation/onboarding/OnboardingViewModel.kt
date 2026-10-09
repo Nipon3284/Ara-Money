@@ -3,6 +3,8 @@ package com.aramoney.app.presentation.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aramoney.app.data.datastore.UserPreferencesRepository
+import com.aramoney.app.presentation.components.DailyTargetPresets
+import com.aramoney.app.util.AmountInput
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,29 +15,28 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 data class OnboardingUiState(
-    val currentPage: Int = 0,
     val userName: String = "",
     val initialBalanceText: String = "",
-    val dailyTargetBudget: Double = 30_000.0,
+    val dailyTargetPreset: Long? = 30_000L,
     val customDailyBudgetText: String = "",
-    val nextAllowanceDate: LocalDate = LocalDate.now().plusDays(25),
-    val isCompleted: Boolean = false,
-    val errorMessage: String? = null
+    val nextAllowanceDate: LocalDate? = null,
+    val isSaving: Boolean = false,
+    val isCompleted: Boolean = false
 ) {
     val initialBalance: Double
-        get() = initialBalanceText.toDoubleOrNull() ?: 0.0
+        get() = AmountInput.toAmount(initialBalanceText)
 
     val effectiveDailyTarget: Double
-        get() = customDailyBudgetText.toDoubleOrNull() ?: dailyTargetBudget
+        get() = customDailyBudgetText.toDoubleOrNull() ?: dailyTargetPreset?.toDouble() ?: 0.0
 
-    val isStep1Valid: Boolean
-        get() = userName.isNotBlank()
-
-    val isStep2Valid: Boolean
-        get() = initialBalance >= 0.0
-
-    val isStep3Valid: Boolean
-        get() = effectiveDailyTarget > 0.0
+    /** Pesan alasan tombol "Lanjut" nonaktif per langkah, atau null jika valid. */
+    fun validationFor(step: Int): String? = when (step) {
+        0 -> if (userName.isBlank()) "Isi nama panggilan dulu ya, Kak" else null
+        1 -> if (initialBalanceText.isBlank()) "Isi saldo saat ini (boleh Rp0 jika belum ada)" else null
+        2 -> if (effectiveDailyTarget <= 0.0) "Pilih atau isi target jajan harian" else null
+        3 -> if (nextAllowanceDate == null) "Pilih tanggal kiriman berikutnya, atau lewati langkah ini" else null
+        else -> null
+    }
 }
 
 @HiltViewModel
@@ -43,48 +44,68 @@ class OnboardingViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
+    companion object {
+        const val STEP_COUNT = 4
+        const val MAX_NAME_LENGTH = 30
+        /** Perkiraan default jika pengguna melewati langkah tanggal kiriman. */
+        const val DEFAULT_ALLOWANCE_DAYS = 30L
+    }
+
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     fun onUserNameChanged(name: String) {
-        _uiState.update { it.copy(userName = name, errorMessage = null) }
+        _uiState.update { it.copy(userName = name.take(MAX_NAME_LENGTH)) }
     }
 
     fun onInitialBalanceChanged(balanceText: String) {
-        val clean = balanceText.filter { it.isDigit() }
-        _uiState.update { it.copy(initialBalanceText = clean, errorMessage = null) }
+        // Saldo awal boleh "0", jadi tidak memakai AmountInput.sanitize (yang membuang nol di depan)
+        val clean = balanceText.filter { it.isDigit() }.take(AmountInput.MAX_DIGITS + 1)
+        val normalized = clean.trimStart('0').ifEmpty { if (clean.isNotEmpty()) "0" else "" }
+        _uiState.update { it.copy(initialBalanceText = normalized) }
     }
 
-    fun onDailyTargetPresetSelected(preset: Double) {
-        _uiState.update { it.copy(dailyTargetBudget = preset, customDailyBudgetText = "") }
+    fun onDailyTargetPresetSelected(preset: Long) {
+        _uiState.update { it.copy(dailyTargetPreset = preset, customDailyBudgetText = "") }
     }
 
     fun onCustomDailyBudgetChanged(text: String) {
-        val clean = text.filter { it.isDigit() }
-        _uiState.update { it.copy(customDailyBudgetText = clean) }
+        _uiState.update {
+            it.copy(
+                customDailyBudgetText = text,
+                dailyTargetPreset = if (text.isBlank()) DailyTargetPresets[1] else null
+            )
+        }
     }
 
     fun onNextAllowanceDateChanged(date: LocalDate) {
         _uiState.update { it.copy(nextAllowanceDate = date) }
     }
 
-    fun completeOnboarding() {
+    /**
+     * Simpan hasil onboarding. Jika [skipAllowanceDate] true, tanggal kiriman diisi perkiraan
+     * [DEFAULT_ALLOWANCE_DAYS] hari dan bisa diubah kapan saja di Pengaturan.
+     */
+    fun completeOnboarding(skipAllowanceDate: Boolean = false) {
         val state = _uiState.value
-        if (state.userName.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Nama panggilan tidak boleh kosong ya, Kak! 🌸") }
-            return
-        }
+        if (state.userName.isBlank() || state.isSaving) return
+        _uiState.update { it.copy(isSaving = true) }
 
         viewModelScope.launch {
             val target = if (state.effectiveDailyTarget > 0.0) state.effectiveDailyTarget else 30_000.0
+            val allowanceDate = if (skipAllowanceDate || state.nextAllowanceDate == null) {
+                LocalDate.now().plusDays(DEFAULT_ALLOWANCE_DAYS)
+            } else {
+                state.nextAllowanceDate
+            }
             userPreferencesRepository.completeOnboarding(
                 userName = state.userName.trim(),
                 initialBalance = state.initialBalance,
-                nextAllowanceDate = state.nextAllowanceDate,
+                nextAllowanceDate = allowanceDate,
                 monthlyAllowanceBudget = state.initialBalance,
                 dailyTargetBudget = target
             )
-            _uiState.update { it.copy(isCompleted = true) }
+            _uiState.update { it.copy(isSaving = false, isCompleted = true) }
         }
     }
 }

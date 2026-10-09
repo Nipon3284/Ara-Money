@@ -5,33 +5,48 @@ import androidx.lifecycle.viewModelScope
 import com.aramoney.app.data.local.entity.CategoryEntity
 import com.aramoney.app.domain.repository.CategoryRepository
 import com.aramoney.app.domain.usecase.AddTransactionUseCase
+import com.aramoney.app.presentation.components.TransactionKind
+import com.aramoney.app.util.AmountInput
 import com.aramoney.app.util.CurrencyFormatter
+import com.aramoney.app.util.DateTimeUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class AddTransactionUiState(
-    val type: String = "EXPENSE", // "EXPENSE" atau "INCOME"
+    val type: String = TransactionKind.EXPENSE.value, // "EXPENSE" atau "INCOME"
     val rawAmountString: String = "",
     val categories: List<CategoryEntity> = emptyList(),
     val selectedCategoryId: Long? = null,
     val note: String = "",
+    val date: LocalDate = LocalDate.now(),
     val errorMessage: String? = null,
     val isSavedSuccess: Boolean = false,
     val isSaving: Boolean = false
 ) {
     val amount: Double
-        get() = rawAmountString.toDoubleOrNull() ?: 0.0
+        get() = AmountInput.toAmount(rawAmountString)
 
     val formattedAmount: String
         get() = CurrencyFormatter.formatRupiah(amount)
 
     val canSave: Boolean
-        get() = amount > 0.0 && selectedCategoryId != null && !isSaving
+        get() = amount > 0.0 && !AmountInput.isOverLimit(rawAmountString) && selectedCategoryId != null && !isSaving
+
+    /** Alasan tombol Simpan nonaktif, ditampilkan di bawah tombol. */
+    val disabledReason: String?
+        get() = when {
+            isSaving -> null
+            amount <= 0.0 -> "Masukkan nominal dulu ya, Kak"
+            AmountInput.isOverLimit(rawAmountString) -> AmountInput.validationMessage(rawAmountString)
+            selectedCategoryId == null -> "Pilih kategori dulu ya, Kak"
+            else -> null
+        }
 }
 
 @HiltViewModel
@@ -39,6 +54,10 @@ class AddTransactionViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
     private val addTransactionUseCase: AddTransactionUseCase
 ) : ViewModel() {
+
+    companion object {
+        const val MAX_NOTE_LENGTH = 80
+    }
 
     private val _uiState = MutableStateFlow(AddTransactionUiState())
     val uiState: StateFlow<AddTransactionUiState> = _uiState.asStateFlow()
@@ -66,35 +85,24 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     private fun updateCategoriesForCurrentType() {
-        val isExpense = _uiState.value.type == "EXPENSE"
+        val isExpense = _uiState.value.type == TransactionKind.EXPENSE.value
         val filtered = allCategoriesCache.filter { it.isExpense == isExpense }
         val defaultCategory = filtered.firstOrNull()?.id
-        _uiState.update {
-            it.copy(
+        _uiState.update { state ->
+            state.copy(
                 categories = filtered,
-                selectedCategoryId = it.selectedCategoryId ?: defaultCategory
+                selectedCategoryId = state.selectedCategoryId?.takeIf { id -> filtered.any { it.id == id } }
+                    ?: defaultCategory
             )
         }
     }
 
     fun onDigitPressed(digit: String) {
-        val current = _uiState.value.rawAmountString
-
-        // Cegah awalan nol berulang
-        if (current.isEmpty() && digit.all { it == '0' }) return
-
-        // Cegah input terlalu panjang (maksimum 9 digit / 999 juta), termasuk tombol "000"
-        if (current.length + digit.length > 9) return
-
-        val newString = current + digit
-        _uiState.update { it.copy(rawAmountString = newString, errorMessage = null) }
+        _uiState.update { it.copy(rawAmountString = AmountInput.append(it.rawAmountString, digit), errorMessage = null) }
     }
 
     fun onBackspacePressed() {
-        val current = _uiState.value.rawAmountString
-        if (current.isNotEmpty()) {
-            _uiState.update { it.copy(rawAmountString = current.dropLast(1), errorMessage = null) }
-        }
+        _uiState.update { it.copy(rawAmountString = AmountInput.backspace(it.rawAmountString), errorMessage = null) }
     }
 
     fun onClearPressed() {
@@ -102,11 +110,7 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     fun onQuickAmountAdd(addAmount: Long) {
-        val current = _uiState.value.rawAmountString.toLongOrNull() ?: 0L
-        val newAmount = current + addAmount
-        if (newAmount in 1..999_999_999) {
-            _uiState.update { it.copy(rawAmountString = newAmount.toString(), errorMessage = null) }
-        }
+        _uiState.update { it.copy(rawAmountString = AmountInput.addQuick(it.rawAmountString, addAmount), errorMessage = null) }
     }
 
     fun onCategorySelected(categoryId: Long) {
@@ -114,26 +118,26 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     fun onNoteChanged(newNote: String) {
-        _uiState.update { it.copy(note = newNote) }
+        _uiState.update { it.copy(note = newNote.take(MAX_NOTE_LENGTH)) }
     }
 
-    fun dismissError() {
-        _uiState.update { it.copy(errorMessage = null) }
+    fun onDateSelected(date: LocalDate) {
+        _uiState.update { it.copy(date = date) }
     }
 
     fun saveTransaction() {
         val state = _uiState.value
-        val amount = state.amount
         val categoryId = state.selectedCategoryId ?: return
 
         _uiState.update { it.copy(isSaving = true, errorMessage = null) }
 
         viewModelScope.launch {
             val result = addTransactionUseCase(
-                amount = amount,
+                amount = state.amount,
                 type = state.type,
                 categoryId = categoryId,
-                note = state.note
+                note = state.note,
+                timestamp = DateTimeUtil.timestampFor(state.date)
             )
 
             result.fold(
@@ -155,14 +159,8 @@ class AddTransactionViewModel @Inject constructor(
     fun resetState() {
         _uiState.update {
             AddTransactionUiState(
-                type = "EXPENSE",
-                rawAmountString = "",
-                categories = allCategoriesCache.filter { it.isExpense },
-                selectedCategoryId = allCategoriesCache.firstOrNull { it.isExpense }?.id,
-                note = "",
-                errorMessage = null,
-                isSavedSuccess = false,
-                isSaving = false
+                categories = allCategoriesCache.filter { c -> c.isExpense },
+                selectedCategoryId = allCategoriesCache.firstOrNull { c -> c.isExpense }?.id
             )
         }
     }

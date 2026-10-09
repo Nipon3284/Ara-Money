@@ -1,5 +1,14 @@
 package com.aramoney.app.presentation.category
 
+import com.aramoney.app.presentation.components.TransactionKind
+import com.aramoney.app.presentation.components.TransactionKindToggle
+
+import com.aramoney.app.presentation.components.AraEmptyState
+import com.aramoney.app.presentation.components.AraScreenHeader
+import com.aramoney.app.presentation.components.AraSegmentedControl
+import com.aramoney.app.presentation.components.LocalAraSnackbar
+import androidx.compose.material.icons.rounded.Category
+
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.selection.selectable
@@ -99,11 +108,11 @@ fun ManageCategoriesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isDark = isAppInDarkTheme()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbar = LocalAraSnackbar.current
 
     LaunchedEffect(uiState.feedbackMessage) {
         uiState.feedbackMessage?.let {
-            snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+            snackbar?.show(it)
             viewModel.dismissFeedback()
         }
     }
@@ -111,39 +120,21 @@ fun ManageCategoriesScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Kategori Transaksi 🏷️",
-                        fontWeight = FontWeight.Bold,
-                        color = AraTheme.colors.textStrong,
-                        fontSize = 20.sp
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint = AraTheme.colors.textStrong
-                        )
-                    }
-                },
+            AraScreenHeader(
+                overline = "Pengaturan",
+                title = "Kategori",
+                onBack = onBackClick,
                 actions = {
                     IconButton(onClick = { viewModel.openAddCategoryDialog() }) {
                         Icon(
                             imageVector = Icons.Rounded.Add,
-                            contentDescription = "Tambah Kategori",
+                            contentDescription = "Tambah kategori",
                             tint = AraTheme.colors.accent,
                             modifier = Modifier.size(28.dp)
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
+                }
             )
         }
     ) { innerPadding ->
@@ -162,92 +153,38 @@ fun ManageCategoriesScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Info Card
             item {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .softShadow(elevation = 2.dp, shape = RoundedCornerShape(18.dp)),
-                    shape = RoundedCornerShape(18.dp),
-                    color = AraTheme.colors.surfaceElevated
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = "Kelola Semua Kategori 🌸",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = AraTheme.colors.textStrong
-                        )
-                        Text(
-                            text = "Kamu bisa menambah kategori baru, mengubah nama, ikon, atau warna pastel, serta menghapus kategori yang tidak diperlukan.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Text(
+                    text = "Tambah, ubah nama, ikon, atau warna kategori. Kategori yang sudah dipakai transaksi tidak bisa dihapus.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            // 2. Filter Tabs: Semua, Pengeluaran, Pemasukan
+            // Filter: Semua, Pengeluaran, Pemasukan
             item {
-                val expenseCount = uiState.categories.count { it.isExpense }
-                val incomeCount = uiState.categories.count { !it.isExpense }
-                val totalCount = uiState.categories.size
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    CategoryTabFilter.values().forEach { filter ->
-                        val isSelected = uiState.selectedTab == filter
-                        val count = when (filter) {
-                            CategoryTabFilter.ALL -> totalCount
-                            CategoryTabFilter.EXPENSE -> expenseCount
-                            CategoryTabFilter.INCOME -> incomeCount
-                        }
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { viewModel.setTabFilter(filter) },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) AraTheme.colors.selectedContainer else AraTheme.colors.surfaceCard,
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, PrimarySakuraPink) else null
-                        ) {
-                            Text(
-                                text = "${filter.label} ($count)",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) DeepBerry else MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
+                val counts = mapOf(
+                    CategoryTabFilter.ALL to uiState.categories.size,
+                    CategoryTabFilter.EXPENSE to uiState.categories.count { it.isExpense },
+                    CategoryTabFilter.INCOME to uiState.categories.count { !it.isExpense }
+                )
+                AraSegmentedControl(
+                    options = CategoryTabFilter.entries,
+                    selected = uiState.selectedTab,
+                    onSelected = { viewModel.setTabFilter(it) },
+                    label = { "${it.label} (${counts[it] ?: 0})" }
+                )
             }
 
-            // 3. Category Items
             if (filteredCategories.isEmpty()) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 40.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Belum ada kategori pada filter ini.\nTekan tombol (+) di pojok kanan atas untuk menambahkan.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+                    AraEmptyState(
+                        icon = Icons.Rounded.Category,
+                        title = "Belum ada kategori di sini",
+                        description = "Tambahkan kategori baru agar transaksi lebih rapi.",
+                        actionText = "Tambah kategori",
+                        onAction = { viewModel.openAddCategoryDialog() }
+                    )
                 }
             } else {
                 items(
@@ -357,7 +294,6 @@ private fun CategoryManageCard(
                                 fontWeight = FontWeight.Medium,
                                 color = if (category.isExpense) AraTheme.colors.accent else AraTheme.colors.income,
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                                fontSize = 11.sp
                             )
                         }
 
@@ -370,9 +306,8 @@ private fun CategoryManageCard(
                                     text = "Bawaan",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
-                                    color = if (isDark) TextPrimaryDark else DeepBerry,
+                                    color = AraTheme.colors.berry,
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                                    fontSize = 11.sp
                                 )
                             }
                         }
@@ -406,13 +341,13 @@ private fun CategoryManageCard(
             } else {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = AraTheme.colors.danger.copy(alpha = 0.12f)
+                    color = AraTheme.colors.surfaceCard
                 ) {
                     Text(
-                        text = "Terkunci 🔒",
+                        text = "Kategori sistem",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = AraTheme.colors.danger,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
@@ -492,54 +427,15 @@ private fun ManageCategoryFormDialog(
                     placeholder = { Text("Contoh: Laundry / Gym / Tabungan") },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AraTheme.colors.accent,
-                        cursorColor = AraTheme.colors.accent
-                    ),
+                    colors = com.aramoney.app.presentation.components.araTextFieldColors(),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 // Toggle Jenis: Pengeluaran / Pemasukan
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { isExpense = true },
-                        color = if (isExpense) AraTheme.colors.action else AraTheme.colors.surfaceCard,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "Pengeluaran",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isExpense) Color.White else MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 10.dp)
-                        )
-                    }
-
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { isExpense = false },
-                        color = if (!isExpense) SuccessMintGreen else AraTheme.colors.surfaceCard,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "Pemasukan",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (!isExpense) DeepBerryDark else MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 10.dp)
-                        )
-                    }
-                }
+                TransactionKindToggle(
+                    selected = if (isExpense) TransactionKind.EXPENSE else TransactionKind.INCOME,
+                    onSelected = { isExpense = it == TransactionKind.EXPENSE }
+                )
 
                 // Pilihan Warna Pastel
                 Text(

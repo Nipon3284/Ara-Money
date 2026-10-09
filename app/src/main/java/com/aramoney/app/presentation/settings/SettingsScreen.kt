@@ -1,7 +1,5 @@
 package com.aramoney.app.presentation.settings
 
-import com.aramoney.app.presentation.theme.AraTheme
-
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,40 +16,36 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.CloudUpload
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.Payments
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Savings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.SettingsSuggest
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,34 +59,33 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aramoney.app.R
 import com.aramoney.app.domain.model.ThemeMode
+import com.aramoney.app.presentation.components.AraConfirmDialog
+import com.aramoney.app.presentation.components.AraPrimaryButton
+import com.aramoney.app.presentation.components.AraScreenHeader
+import com.aramoney.app.presentation.components.DailyTargetPicker
+import com.aramoney.app.presentation.components.DailyTargetPresets
 import com.aramoney.app.presentation.components.HansaraWatermark
+import com.aramoney.app.presentation.components.LocalAraSnackbar
+import com.aramoney.app.presentation.components.AllowanceDateDialog
 import com.aramoney.app.presentation.profile.EditProfileDialog
 import com.aramoney.app.presentation.profile.UserAvatar
-import com.aramoney.app.presentation.theme.DeepBerry
-import com.aramoney.app.presentation.theme.DeepBerryDark
+import com.aramoney.app.presentation.theme.AraShape
+import com.aramoney.app.presentation.theme.AraTheme
 import com.aramoney.app.presentation.theme.PrimarySakuraPink
-import com.aramoney.app.presentation.theme.PrimarySakuraPinkContainer
-import com.aramoney.app.presentation.theme.SurfaceCard
-import com.aramoney.app.presentation.theme.SurfaceCardDark
-import com.aramoney.app.presentation.theme.SurfaceElevated
-import com.aramoney.app.presentation.theme.SurfaceElevatedDark
-import com.aramoney.app.presentation.theme.TextPrimaryDark
 import com.aramoney.app.presentation.theme.isAppInDarkTheme
 import com.aramoney.app.presentation.theme.softShadow
 import com.aramoney.app.util.CurrencyFormatter
 import com.aramoney.app.util.DateTimeUtil
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 
 @Composable
 fun SettingsScreen(
@@ -102,28 +95,25 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isDark = isAppInDarkTheme()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbar = LocalAraSnackbar.current
 
     // SAF Launchers untuk Export dan Import JSON tanpa izin storage legacy
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
-        if (uri != null) {
-            viewModel.exportBackup(uri)
-        }
+        if (uri != null) viewModel.exportBackup(uri)
     }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        if (uri != null) {
-            viewModel.onImportFileSelected(uri)
-        }
+        if (uri != null) viewModel.onImportFileSelected(uri)
     }
 
+    // Feedback memakai Snackbar global agar konsisten dengan layar lain
     LaunchedEffect(uiState.feedbackMessage) {
         uiState.feedbackMessage?.let {
-            snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+            snackbar?.show(it)
             viewModel.dismissFeedback()
         }
     }
@@ -131,33 +121,8 @@ fun SettingsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            // Sticky / Fixed Header Navbar
-            Surface(
-                color = Color.Transparent,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = "Personalisasi & Cadangan ⚙️",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else DeepBerry
-                    )
-                    Text(
-                        text = "Pengaturan",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AraTheme.colors.textStrong
-                    )
-                }
-            }
+            AraScreenHeader(overline = "Personalisasi & cadangan", title = "Pengaturan")
         }
     ) { innerPadding ->
         LazyColumn(
@@ -165,144 +130,108 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 2. Profil Pengguna (Single Local User - Nama & Foto Avatar)
+            // 1. Profil Pengguna
             item {
                 ProfileCard(
                     userName = uiState.userPreferences.userName,
                     avatarPresetId = uiState.userPreferences.avatarPresetId,
                     profilePhotoPath = uiState.userPreferences.profilePhotoPath,
-                    onEditClick = { viewModel.openProfileDialog() },
-                    isDark = isDark
+                    onEditClick = { viewModel.openProfileDialog() }
                 )
             }
 
-            // 3. Menu Navigasi: Kelola Kategori Transaksi
+            // 2. Keuangan
             item {
-                SettingsSectionCard(title = "Kategori Transaksi", isDark = isDark) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable(onClick = onNavigateToManageCategories)
-                            .padding(vertical = 10.dp, horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(PrimarySakuraPink.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Category,
-                                contentDescription = null,
-                                tint = AraTheme.colors.berry,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Kelola Kategori Transaksi",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = AraTheme.colors.textStrong
-                            )
-                            Text(
-                                text = "${uiState.categories.size} kategori aktif • Tambah, ubah, hapus",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AraTheme.colors.accent
-                            )
-                        }
-
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                            contentDescription = "Buka Kelola Kategori",
-                            tint = if (isDark) Color.LightGray else DeepBerry.copy(alpha = 0.6f),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
-
-            // 4. Pengaturan Anggaran & Target Harian
-            item {
-                SettingsSectionCard(title = "Keuangan & Anggaran Harian", isDark = isDark) {
+                SettingsSectionCard(title = "Keuangan") {
                     SettingsActionRow(
                         icon = Icons.Rounded.Savings,
-                        title = "Target Jajan Harian (Gaya Hidup)",
+                        title = "Target jajan harian",
                         subtitle = "${CurrencyFormatter.formatRupiah(uiState.userPreferences.dailyTargetBudget)} / hari",
-                        onClick = { viewModel.openDailyTargetDialog() },
-                        isDark = isDark
+                        onClick = { viewModel.openDailyTargetDialog() }
+                    )
+                    SettingsActionRow(
+                        icon = Icons.Rounded.CalendarMonth,
+                        title = "Tanggal kiriman berikutnya",
+                        subtitle = uiState.userPreferences.nextAllowanceDate?.let { DateTimeUtil.formatLocalDate(it) }
+                            ?: "Belum diatur",
+                        onClick = { viewModel.openAllowanceDateDialog() }
+                    )
+                    SettingsActionRow(
+                        icon = Icons.Rounded.Category,
+                        title = "Kelola kategori",
+                        subtitle = "${uiState.categories.size} kategori aktif",
+                        onClick = onNavigateToManageCategories,
+                        showChevron = true
                     )
                 }
             }
 
-            // 5. Pengaturan Tema ("Sakura Night" vs "Sakura Day")
+            // 3. Tema
             item {
-                SettingsSectionCard(title = "Tema Tampilan", isDark = isDark) {
+                SettingsSectionCard(title = "Tema tampilan") {
                     ThemeSelectionRow(
                         currentMode = uiState.userPreferences.themeMode,
-                        onModeSelect = { viewModel.setThemeMode(it) },
-                        isDark = isDark
+                        onModeSelect = { viewModel.setThemeMode(it) }
                     )
                 }
             }
 
-            // 6. Cadangkan & Pulihkan (Backup & Restore SAF)
+            // 4. Cadangkan & Pulihkan
             item {
-                SettingsSectionCard(title = "Privasi & Cadangan Data (100% Offline)", isDark = isDark) {
+                SettingsSectionCard(title = "Cadangan data (100% offline)") {
                     Text(
-                        text = "Data tersimpan sepenuhnya di perangkatmu. Cadangkan secara berkala ke berkas JSON agar tidak hilang saat ganti handphone.",
+                        text = "Data tersimpan hanya di perangkat ini. Cadangkan secara berkala ke berkas JSON agar tidak hilang saat ganti HP.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    if (uiState.isBackupInProgress) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = AraTheme.colors.accent
+                        )
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Button(
+                        AraPrimaryButton(
+                            text = "Cadangkan",
+                            leadingIcon = Icons.Rounded.CloudUpload,
                             onClick = { exportLauncher.launch("ara_money_backup_${System.currentTimeMillis()}.json") },
-                            colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
-                            shape = RoundedCornerShape(14.dp),
+                            enabled = !uiState.isBackupInProgress,
                             modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Rounded.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Cadangkan", fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-
+                        )
                         OutlinedButton(
                             onClick = { importLauncher.launch(arrayOf("application/json")) },
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.weight(1f)
+                            enabled = !uiState.isBackupInProgress,
+                            shape = AraShape.button,
+                            border = BorderStroke(1.dp, AraTheme.colors.border),
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 52.dp)
                         ) {
-                            Icon(Icons.Rounded.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Pulihkan", color = AraTheme.colors.textStrong)
+                            Icon(Icons.Rounded.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp), tint = AraTheme.colors.textStrong)
+                            Spacer(modifier = Modifier.size(6.dp))
+                            Text("Pulihkan", color = AraTheme.colors.textStrong, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
             }
 
-            // 7. Tentang Aplikasi & Watermark
-            item {
-                AboutAppCard(isDark = isDark)
-            }
+            // 5. Tentang Aplikasi
+            item { AboutAppCard() }
 
-            item {
-                Spacer(modifier = Modifier.height(72.dp))
-            }
+            item { Spacer(modifier = Modifier.height(72.dp)) }
         }
     }
 
-    // Dialog Edit Profil (Nama & Foto)
+    // Dialog Edit Profil
     if (uiState.isProfileDialogOpen) {
         EditProfileDialog(
             initialName = uiState.userPreferences.userName,
@@ -316,66 +245,37 @@ fun SettingsScreen(
         )
     }
 
-    // Dialog Pengaturan Target Jajan Harian
+    // Dialog Target Jajan Harian
     if (uiState.isDailyTargetDialogOpen) {
         EditDailyTargetBudgetDialog(
             currentTarget = uiState.userPreferences.dailyTargetBudget,
             onDismiss = { viewModel.closeDailyTargetDialog() },
-            onSave = { target -> viewModel.updateDailyTargetBudget(target) },
-            isDark = isDark
+            onSave = { target -> viewModel.updateDailyTargetBudget(target) }
+        )
+    }
+
+    // Dialog Tanggal Kiriman Berikutnya
+    if (uiState.isAllowanceDateDialogOpen) {
+        AllowanceDateDialog(
+            initialDate = uiState.userPreferences.nextAllowanceDate,
+            onDismiss = { viewModel.closeAllowanceDateDialog() },
+            onConfirm = { viewModel.updateNextAllowanceDate(it) }
         )
     }
 
     // Dialog Konfirmasi Pulihkan Data Cadangan
-    if (uiState.backupPreview != null) {
-        val preview = uiState.backupPreview!!
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissRestoreDialog() },
-            shape = RoundedCornerShape(28.dp),
-            title = {
-                Text(
-                    text = "Pulihkan Data Cadangan? 📥",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AraTheme.colors.textStrong
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Ditemukan berkas cadangan resmi Ara Money dengan rincian:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text("• ${preview.transactionCount} catatan transaksi keuangan", style = MaterialTheme.typography.bodySmall)
-                    Text("• ${preview.splitBillDebtCount} catatan hutang & piutang", style = MaterialTheme.typography.bodySmall)
-                    Text("• Waktu pencadangan: ${DateTimeUtil.formatTransactionDate(preview.exportedAt)}", style = MaterialTheme.typography.bodySmall)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Data yang ada akan digabungkan secara aman tanpa menghapus histori sebelumnya.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AraTheme.colors.accent,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.confirmRestore() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Lanjutkan Pulihkan 🌸", fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.dismissRestoreDialog() },
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Batal", color = MaterialTheme.colorScheme.onSurface)
-                }
-            }
+    uiState.backupPreview?.let { preview ->
+        AraConfirmDialog(
+            title = "Pulihkan data cadangan?",
+            message = "Berkas cadangan Ara Money ditemukan:\n" +
+                "• ${preview.transactionCount} transaksi\n" +
+                "• ${preview.splitBillDebtCount} catatan utang & piutang\n" +
+                "• Dicadangkan ${DateTimeUtil.formatTransactionDate(preview.exportedAt)}\n\n" +
+                "Data akan digabungkan dengan data yang ada tanpa menghapus riwayat sebelumnya.",
+            confirmText = "Pulihkan",
+            confirmEnabled = !uiState.isBackupInProgress,
+            onConfirm = { viewModel.confirmRestore() },
+            onDismiss = { viewModel.dismissRestoreDialog() }
         )
     }
 }
@@ -385,14 +285,13 @@ private fun ProfileCard(
     userName: String,
     avatarPresetId: String,
     profilePhotoPath: String?,
-    onEditClick: () -> Unit,
-    isDark: Boolean
+    onEditClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .softShadow(elevation = 3.dp, shape = RoundedCornerShape(22.dp)),
-        shape = RoundedCornerShape(22.dp),
+            .softShadow(elevation = 3.dp, shape = AraShape.card),
+        shape = AraShape.card,
         color = AraTheme.colors.surfaceElevated
     ) {
         Row(
@@ -400,52 +299,36 @@ private fun ProfileCard(
                 .fillMaxWidth()
                 .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                UserAvatar(
-                    userName = userName,
-                    avatarPresetId = avatarPresetId,
-                    profilePhotoPath = profilePhotoPath,
-                    size = 64.dp
+            UserAvatar(
+                userName = userName,
+                avatarPresetId = avatarPresetId,
+                profilePhotoPath = profilePhotoPath,
+                size = 64.dp
+            )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    text = userName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AraTheme.colors.textStrong
                 )
-
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        text = userName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AraTheme.colors.textStrong
-                    )
-                    Text(
-                        text = "Pengguna Lokal • 100% Offline 🌸",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = "Pengguna lokal • 100% offline",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-
             OutlinedButton(
                 onClick = onEditClick,
-                shape = RoundedCornerShape(12.dp)
+                shape = AraShape.chip,
+                border = BorderStroke(1.dp, AraTheme.colors.border),
+                modifier = Modifier.heightIn(min = 48.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Edit,
-                    contentDescription = null,
-                    tint = AraTheme.colors.accent,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Ubah",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AraTheme.colors.accent
-                )
+                Icon(Icons.Rounded.Edit, contentDescription = null, tint = AraTheme.colors.accent, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.size(4.dp))
+                Text("Ubah profil", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AraTheme.colors.accent)
             }
         }
     }
@@ -454,15 +337,13 @@ private fun ProfileCard(
 @Composable
 private fun SettingsSectionCard(
     title: String,
-    isDark: Boolean,
-    action: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .softShadow(elevation = 3.dp, shape = RoundedCornerShape(22.dp)),
-        shape = RoundedCornerShape(22.dp),
+            .softShadow(elevation = 3.dp, shape = AraShape.card),
+        shape = AraShape.card,
         color = AraTheme.colors.surfaceElevated
     ) {
         Column(
@@ -471,19 +352,13 @@ private fun SettingsSectionCard(
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = AraTheme.colors.textStrong
-                )
-                action?.invoke()
-            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = AraTheme.colors.textStrong,
+                modifier = Modifier.semantics { heading() }
+            )
             content()
         }
     }
@@ -495,12 +370,13 @@ private fun SettingsActionRow(
     title: String,
     subtitle: String,
     onClick: () -> Unit,
-    isDark: Boolean
+    showChevron: Boolean = false
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .heightIn(min = 56.dp)
+            .clip(AraShape.chip)
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -508,59 +384,73 @@ private fun SettingsActionRow(
     ) {
         Box(
             modifier = Modifier
-                .size(38.dp)
+                .size(40.dp)
                 .clip(CircleShape)
                 .background(PrimarySakuraPink.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = AraTheme.colors.berry, modifier = Modifier.size(20.dp))
         }
-
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = PrimarySakuraPink)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = AraTheme.colors.textStrong
+            )
+            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        Icon(
+            imageVector = if (showChevron) Icons.AutoMirrored.Rounded.KeyboardArrowRight else Icons.Rounded.Edit,
+            contentDescription = null,
+            tint = AraTheme.colors.textMuted,
+            modifier = Modifier.size(if (showChevron) 24.dp else 18.dp)
+        )
     }
 }
 
 @Composable
 private fun ThemeSelectionRow(
     currentMode: ThemeMode,
-    onModeSelect: (ThemeMode) -> Unit,
-    isDark: Boolean
+    onModeSelect: (ThemeMode) -> Unit
 ) {
+    val modes = listOf(
+        Triple(ThemeMode.SYSTEM, "Ikuti sistem", Icons.Rounded.SettingsSuggest),
+        Triple(ThemeMode.LIGHT, "Terang", Icons.Rounded.LightMode),
+        Triple(ThemeMode.SAKURA_NIGHT, "Gelap", Icons.Rounded.DarkMode)
+    )
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        val modes = listOf(
-            Triple(ThemeMode.SYSTEM, "Sistem", "Auto"),
-            Triple(ThemeMode.LIGHT, "Sakura Day", "🌸"),
-            Triple(ThemeMode.SAKURA_NIGHT, "Sakura Night", "🌙")
-        )
-
-        modes.forEach { (mode, label, emoji) ->
+        modes.forEach { (mode, label, icon) ->
             val isSelected = currentMode == mode
             Surface(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { onModeSelect(mode) },
-                shape = RoundedCornerShape(14.dp),
+                    .clip(AraShape.chip)
+                    .selectable(selected = isSelected, role = Role.RadioButton) { onModeSelect(mode) },
+                shape = AraShape.chip,
                 color = if (isSelected) AraTheme.colors.selectedContainer else AraTheme.colors.surfaceCard,
-                border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, PrimarySakuraPink) else null
+                border = if (isSelected) BorderStroke(1.5.dp, PrimarySakuraPink) else null
             ) {
                 Column(
-                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
+                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(text = emoji, fontSize = 20.sp)
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isSelected) AraTheme.colors.onSelectedContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) DeepBerry else MaterialTheme.colorScheme.onSurface,
+                        color = if (isSelected) AraTheme.colors.onSelectedContainer else MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -570,12 +460,12 @@ private fun ThemeSelectionRow(
 }
 
 @Composable
-private fun AboutAppCard(isDark: Boolean) {
+private fun AboutAppCard() {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .softShadow(elevation = 2.dp, shape = RoundedCornerShape(22.dp)),
-        shape = RoundedCornerShape(22.dp),
+            .softShadow(elevation = 2.dp, shape = AraShape.card),
+        shape = AraShape.card,
         color = AraTheme.colors.surfaceElevated
     ) {
         Column(
@@ -587,10 +477,9 @@ private fun AboutAppCard(isDark: Boolean) {
         ) {
             Image(
                 painter = painterResource(id = R.drawable.app_logo),
-                contentDescription = "Ara Money Mascot",
+                contentDescription = null,
                 modifier = Modifier
                     .size(76.dp)
-                    .softShadow(elevation = 6.dp, shape = RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
             )
             Text(
@@ -600,20 +489,18 @@ private fun AboutAppCard(isDark: Boolean) {
                 color = AraTheme.colors.textStrong
             )
             Text(
-                text = "Versi 1.0.0 • 100% Offline & Menjaga Privasimu",
+                text = "Versi 1.0.0 • 100% offline & menjaga privasi",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Dibuat dengan 💜 oleh hansara untuk seluruh mahasiswi Indonesia",
+                text = "Dibuat oleh hansara untuk seluruh mahasiswi Indonesia",
                 style = MaterialTheme.typography.bodySmall,
                 color = AraTheme.colors.accent,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
-            HansaraWatermark(
-                modifier = Modifier.padding(top = 2.dp)
-            )
+            HansaraWatermark(modifier = Modifier.padding(top = 2.dp))
         }
     }
 }
@@ -622,116 +509,34 @@ private fun AboutAppCard(isDark: Boolean) {
 private fun EditDailyTargetBudgetDialog(
     currentTarget: Double,
     onDismiss: () -> Unit,
-    onSave: (Double) -> Unit,
-    isDark: Boolean
+    onSave: (Double) -> Unit
 ) {
-    val presets = listOf(20_000.0, 30_000.0, 50_000.0)
-    var customBudgetText by remember {
-        mutableStateOf(if (currentTarget !in presets && currentTarget > 0) currentTarget.toLong().toString() else "")
-    }
-    var selectedPreset by remember {
-        mutableStateOf(if (currentTarget in presets) currentTarget else null)
-    }
+    val current = currentTarget.toLong()
+    var selectedPreset by remember { mutableStateOf(current.takeIf { it in DailyTargetPresets }) }
+    var rawCustom by remember { mutableStateOf(if (current !in DailyTargetPresets && current > 0) current.toString() else "") }
+    val customAmount = rawCustom.toLongOrNull() ?: 0L
+    val finalAmount = if (rawCustom.isNotBlank()) customAmount else selectedPreset ?: 0L
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
-        title = {
-            Text(
-                text = "Target Jajan Harian 🌸",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = AraTheme.colors.textStrong
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Batas jajan nyaman harian untuk mengukur daya tahan saldo dompet (Financial Runway) kamu.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Text(
-                    text = "Pilihan Rekomendasi:",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AraTheme.colors.textStrong
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    presets.forEach { preset ->
-                        val isSelected = selectedPreset == preset && customBudgetText.isBlank()
-                        Surface(
-                            onClick = {
-                                selectedPreset = preset
-                                customBudgetText = ""
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) AraTheme.colors.action else AraTheme.colors.surfaceCard,
-                            border = BorderStroke(
-                                1.2.dp,
-                                if (isSelected) PrimarySakuraPink else AraTheme.colors.border
-                            ),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = CurrencyFormatter.formatRupiah(preset),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else AraTheme.colors.textStrong
-                                )
-                            }
-                        }
-                    }
-                }
-
-                OutlinedTextField(
-                    value = customBudgetText,
-                    onValueChange = { input ->
-                        val clean = input.filter { it.isDigit() }
-                        customBudgetText = clean
-                        selectedPreset = null
-                    },
-                    label = { Text("Atau Nominal Kustom (Rp/hari)") },
-                    placeholder = { Text("Contoh: 35000") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AraTheme.colors.accent,
-                        focusedLabelColor = AraTheme.colors.accent
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val finalAmount = selectedPreset ?: customBudgetText.toDoubleOrNull() ?: 30_000.0
-                    onSave(if (finalAmount > 0) finalAmount else 30_000.0)
+    AraConfirmDialog(
+        title = "Target jajan harian",
+        message = "Batas jajan nyaman per hari. Dipakai untuk menghitung jatah hari ini dan berapa hari saldo Kakak bertahan.",
+        confirmText = "Simpan",
+        confirmEnabled = finalAmount > 0,
+        onConfirm = { onSave(finalAmount.toDouble()) },
+        onDismiss = onDismiss,
+        extraContent = {
+            DailyTargetPicker(
+                selectedPreset = selectedPreset,
+                rawCustom = rawCustom,
+                onPresetSelected = {
+                    selectedPreset = it
+                    rawCustom = ""
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text("Simpan", fontWeight = FontWeight.Bold, color = Color.White)
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(14.dp)) {
-                Text("Batal", color = MaterialTheme.colorScheme.onSurface)
-            }
+                onCustomChanged = {
+                    rawCustom = it
+                    selectedPreset = null
+                }
+            )
         }
     )
 }
