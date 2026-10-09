@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.AraMoney" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- Varian "Sakura Night" agar splash & jendela awal tidak berkedip terang saat mode gelap -->
+    <style name="Theme.AraMoney" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/ara_window_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">

@@ -1,4 +1,6 @@
-﻿package com.aramoney.app.presentation.profile
+package com.aramoney.app.presentation.profile
+
+import com.aramoney.app.presentation.theme.AraTheme
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -175,7 +177,7 @@ fun UserAvatar(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = (size.value * 0.45f).sp,
-                    color = DeepBerry
+                    color = AraTheme.colors.berry
                 )
             }
         }

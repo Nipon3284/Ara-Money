@@ -4,8 +4,12 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Sistem Token Warna "Ara Money"
- * Desain feminin pastel yang nyaman dipandang, ramah kontras (WCAG AA & AAA),
- * dan memiliki variasi "Sakura Night" yang lembut untuk malam hari.
+ * Desain feminin pastel dengan variasi "Sakura Night" untuk malam hari.
+ *
+ * Aturan kontras (WCAG AA):
+ * - Pink pastel [PrimarySakuraPink] hanya untuk aksen, dekorasi, latar, dan teks di atas latar gelap.
+ * - Tombol/segmen terisi dengan teks putih WAJIB memakai [PrimaryAction] (kontras ~5.9:1).
+ * - Teks/ikon aksi di atas latar terang memakai [AraAccent] (lihat Theme.kt).
  */
 
 // ==========================================
@@ -25,6 +29,12 @@ val SurfaceElevated = Color(0xFFFFFFFF)
 val ErrorSoftRed = Color(0xFFE57373)
 val SuccessMintGreen = Color(0xFFA5D6A7)
 val BorderSoftPink = Color(0xFFF3D9E4)
+
+// Warna aksi beraksesibilitas tinggi (teks putih di atasnya lolos WCAG AA)
+val PrimaryAction = Color(0xFFC2185B)
+val DangerAction = Color(0xFFC62828)
+val IncomeGreen = Color(0xFF2E7D32)
+val WarningOrange = Color(0xFFE65100)
 
 // Neutral sub-colors
 val TextSecondaryLight = Color(0xFF8E6593)

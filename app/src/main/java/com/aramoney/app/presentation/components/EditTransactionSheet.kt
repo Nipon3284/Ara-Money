@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.components
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -115,7 +117,7 @@ fun EditTransactionSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = if (isDark) SurfaceElevatedDark else SurfaceElevated,
+        containerColor = AraTheme.colors.surfaceElevated,
         modifier = modifier
     ) {
         Column(
@@ -144,7 +146,7 @@ fun EditTransactionSheet(
                         text = "Ubah Transaksi ✏️",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                     Text(
                         text = "Dicatat pada ${DateTimeUtil.formatTransactionDate(transaction.timestamp)}",
@@ -157,7 +159,7 @@ fun EditTransactionSheet(
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = "Tutup",
-                        tint = if (isDark) TextPrimaryDark else DeepBerryDark
+                        tint = AraTheme.colors.textStrong
                     )
                 }
             }
@@ -165,7 +167,7 @@ fun EditTransactionSheet(
             // Banner peringatan jika transaksi lebih dari 24 jam
             if (isOlderThan24h) {
                 Surface(
-                    color = Color(0xFFFFF3CD),
+                    color = AraTheme.colors.warningContainer,
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, Color(0xFFFFEEBA)),
                     modifier = Modifier.fillMaxWidth()
@@ -178,13 +180,13 @@ fun EditTransactionSheet(
                         Icon(
                             imageVector = Icons.Rounded.WarningAmber,
                             contentDescription = null,
-                            tint = Color(0xFF856404),
+                            tint = AraTheme.colors.onWarningContainer,
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
                             text = "Transaksi ini tercatat > 24 jam lalu. Perubahan akan memengaruhi histori saldo.",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF856404)
+                            color = AraTheme.colors.onWarningContainer
                         )
                     }
                 }
@@ -194,7 +196,7 @@ fun EditTransactionSheet(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = if (isDark) SurfaceCardDark else SurfaceCard
+                color = AraTheme.colors.surfaceCard
             ) {
                 Row(
                     modifier = Modifier
@@ -209,7 +211,7 @@ fun EditTransactionSheet(
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { type = "EXPENSE" },
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isExpense) PrimarySakuraPink else Color.Transparent
+                        color = if (isExpense) AraTheme.colors.action else Color.Transparent
                     ) {
                         Text(
                             text = "💸 Pengeluaran",
@@ -252,8 +254,8 @@ fun EditTransactionSheet(
                     .fillMaxWidth()
                     .softShadow(elevation = 3.dp, shape = RoundedCornerShape(20.dp)),
                 shape = RoundedCornerShape(20.dp),
-                color = if (isDark) SurfaceCardDark else SurfaceCard,
-                border = BorderStroke(1.dp, if (isDark) Color(0xFF4B2E52) else Color(0xFFF7E6EE))
+                color = AraTheme.colors.surfaceCard,
+                border = BorderStroke(1.dp, AraTheme.colors.border)
             ) {
                 Column(
                     modifier = Modifier
@@ -271,9 +273,9 @@ fun EditTransactionSheet(
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Bold,
                         color = if (type == "EXPENSE") {
-                            if (isDark) PrimarySakuraPink else DeepBerryDark
+                            AraTheme.colors.expense
                         } else {
-                            if (isDark) SuccessMintGreen else Color(0xFF2E7D32)
+                            AraTheme.colors.income
                         },
                         textAlign = TextAlign.Center
                     )
@@ -289,7 +291,7 @@ fun EditTransactionSheet(
                     text = "Kategori",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
 
                 FlowRow(
@@ -309,7 +311,7 @@ fun EditTransactionSheet(
                             label = "CategoryBorder"
                         )
                         val chipBg = when {
-                            isSelected -> if (isDark) Color(0xFF532457) else PrimarySakuraPinkContainer
+                            isSelected -> AraTheme.colors.selectedContainer
                             isDark -> SurfaceCardDark
                             else -> SurfaceCard
                         }
@@ -365,8 +367,8 @@ fun EditTransactionSheet(
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimarySakuraPink,
-                    unfocusedBorderColor = if (isDark) Color(0xFF4B2E52) else Color(0xFFF3D9E4),
+                    focusedBorderColor = AraTheme.colors.accent,
+                    unfocusedBorderColor = AraTheme.colors.border,
                     focusedContainerColor = if (isDark) SurfaceCardDark else Color.White,
                     unfocusedContainerColor = if (isDark) SurfaceCardDark else Color.White
                 )
@@ -419,7 +421,7 @@ fun EditTransactionSheet(
                                         }
                                     },
                                 shape = RoundedCornerShape(16.dp),
-                                color = if (isDark) SurfaceCardDark else SurfaceCard
+                                color = AraTheme.colors.surfaceCard
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -431,7 +433,7 @@ fun EditTransactionSheet(
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Rounded.Backspace,
                                             contentDescription = "Hapus",
-                                            tint = if (isDark) TextPrimaryDark else DeepBerryDark,
+                                            tint = AraTheme.colors.textStrong,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     } else {
@@ -439,7 +441,7 @@ fun EditTransactionSheet(
                                             text = item,
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = if (isDark) TextPrimaryDark else DeepBerryDark
+                                            color = AraTheme.colors.textStrong
                                         )
                                     }
                                 }
@@ -468,7 +470,7 @@ fun EditTransactionSheet(
                         onClick = onDelete,
                         shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = ErrorSoftRed
+                            contentColor = AraTheme.colors.danger
                         ),
                         border = BorderStroke(1.dp, ErrorSoftRed.copy(alpha = 0.5f)),
                         modifier = Modifier.height(50.dp)
@@ -501,8 +503,8 @@ fun EditTransactionSheet(
                             ),
                         shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = PrimarySakuraPink,
-                            disabledContainerColor = if (isDark) Color(0xFF422847) else Color(0xFFE8DCE2)
+                            containerColor = AraTheme.colors.action,
+                            disabledContainerColor = AraTheme.colors.disabledContainer
                         )
                     ) {
                         Text(

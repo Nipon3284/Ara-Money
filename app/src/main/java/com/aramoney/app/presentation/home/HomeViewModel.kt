@@ -34,6 +34,8 @@ data class HomeUiState(
     val todayExpenseTotal: Double = 0.0,
     val todayIncomeTotal: Double = 0.0,
     val todayTransactionCount: Int = 0,
+    /** Kategori yang muncul di transaksi hari ini (untuk chip filter). */
+    val filterCategories: List<CategoryEntity> = emptyList(),
     val transactionToDelete: TransactionEntity? = null,
     val transactionToEdit: TransactionEntity? = null,
     val oldTransactionWarning: TransactionEntity? = null
@@ -124,6 +126,9 @@ class HomeViewModel @Inject constructor(
             todayExpenseTotal = todayExpense,
             todayIncomeTotal = todayIncome,
             todayTransactionCount = todayTransactions.size,
+            filterCategories = todayTransactions.map { it.categoryId }.distinct()
+                .mapNotNull { id -> categories.find { it.id == id } }
+                .sortedWith(compareByDescending<CategoryEntity> { it.isExpense }.thenBy { it.sortOrder }),
             transactionToDelete = pendingDelete,
             transactionToEdit = pendingEdit,
             oldTransactionWarning = warningTx
@@ -134,8 +139,8 @@ class HomeViewModel @Inject constructor(
         initialValue = HomeUiState()
     )
 
-    fun onCategorySelected(categoryId: Long) {
-        if (_selectedCategoryId.value == categoryId) {
+    fun onCategorySelected(categoryId: Long?) {
+        if (categoryId == null || _selectedCategoryId.value == categoryId) {
             _selectedCategoryId.value = null
         } else {
             _selectedCategoryId.value = categoryId
@@ -165,10 +170,11 @@ class HomeViewModel @Inject constructor(
         _transactionToEdit.value = null
     }
 
-    fun updateTransaction(transaction: TransactionEntity) {
+    fun updateTransaction(transaction: TransactionEntity, onDone: () -> Unit = {}) {
         viewModelScope.launch {
             transactionRepository.updateTransaction(transaction)
             _transactionToEdit.value = null
+            onDone()
         }
     }
 
@@ -180,11 +186,20 @@ class HomeViewModel @Inject constructor(
         _transactionToDelete.value = null
     }
 
-    fun confirmDeleteTransaction() {
+    /** Hapus transaksi lalu kembalikan salinannya agar UI bisa menawarkan "Urungkan". */
+    fun confirmDeleteTransaction(onDeleted: (TransactionEntity) -> Unit = {}) {
         val transaction = _transactionToDelete.value ?: return
         viewModelScope.launch {
             transactionRepository.deleteTransaction(transaction)
             _transactionToDelete.value = null
+            onDeleted(transaction)
+        }
+    }
+
+    /** Masukkan kembali transaksi yang baru dihapus (aksi Undo dari Snackbar). */
+    fun restoreTransaction(transaction: TransactionEntity) {
+        viewModelScope.launch {
+            transactionRepository.insertTransaction(transaction)
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.onboarding
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -160,7 +162,7 @@ fun OnboardingScreen(
                 if (uiState.errorMessage != null) {
                     Text(
                         text = uiState.errorMessage!!,
-                        color = ErrorSoftRed,
+                        color = AraTheme.colors.danger,
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -197,8 +199,8 @@ fun OnboardingScreen(
                         ),
                     shape = RoundedCornerShape(20.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimarySakuraPink,
-                        disabledContainerColor = if (isDark) Color(0xFF422847) else Color(0xFFE8DCE2)
+                        containerColor = AraTheme.colors.action,
+                        disabledContainerColor = AraTheme.colors.disabledContainer
                     )
                 ) {
                     Text(
@@ -245,7 +247,7 @@ private fun StepWelcome(
             text = "Selamat Datang di Ara Money! 🌸",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = if (isDark) TextPrimaryDark else DeepBerryDark,
+            color = AraTheme.colors.textStrong,
             textAlign = TextAlign.Center
         )
 
@@ -267,9 +269,9 @@ private fun StepWelcome(
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimarySakuraPink,
-                focusedContainerColor = if (isDark) SurfaceElevatedDark else SurfaceElevated,
-                unfocusedContainerColor = if (isDark) SurfaceElevatedDark else SurfaceElevated
+                focusedBorderColor = AraTheme.colors.accent,
+                focusedContainerColor = AraTheme.colors.surfaceElevated,
+                unfocusedContainerColor = AraTheme.colors.surfaceElevated
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -302,7 +304,7 @@ private fun StepInitialBalance(
             Icon(
                 imageVector = Icons.Rounded.Savings,
                 contentDescription = null,
-                tint = DeepBerry,
+                tint = AraTheme.colors.berry,
                 modifier = Modifier.size(44.dp)
             )
         }
@@ -311,7 +313,7 @@ private fun StepInitialBalance(
             text = "Berapa Uang Sakumu Saat Ini? 💰",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = if (isDark) TextPrimaryDark else DeepBerryDark,
+            color = AraTheme.colors.textStrong,
             textAlign = TextAlign.Center
         )
 
@@ -326,7 +328,7 @@ private fun StepInitialBalance(
         // Live Preview Format Rupiah
         val amount = balanceText.toDoubleOrNull() ?: 0.0
         Surface(
-            color = if (isDark) SurfaceCardDark else SurfaceCard,
+            color = AraTheme.colors.surfaceCard,
             shape = RoundedCornerShape(18.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -334,7 +336,7 @@ private fun StepInitialBalance(
                 text = CurrencyFormatter.formatRupiah(amount),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) PrimarySakuraPink else DeepBerryDark,
+                color = AraTheme.colors.expense,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(vertical = 14.dp)
             )
@@ -348,9 +350,9 @@ private fun StepInitialBalance(
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimarySakuraPink,
-                focusedContainerColor = if (isDark) SurfaceElevatedDark else SurfaceElevated,
-                unfocusedContainerColor = if (isDark) SurfaceElevatedDark else SurfaceElevated
+                focusedBorderColor = AraTheme.colors.accent,
+                focusedContainerColor = AraTheme.colors.surfaceElevated,
+                unfocusedContainerColor = AraTheme.colors.surfaceElevated
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -387,7 +389,7 @@ private fun StepDailyTargetBudget(
             text = "Target Jajan Harianmu? 🌸",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = if (isDark) TextPrimaryDark else DeepBerryDark,
+            color = AraTheme.colors.textStrong,
             textAlign = TextAlign.Center
         )
 
@@ -402,7 +404,7 @@ private fun StepDailyTargetBudget(
             text = "Pilih Rekomendasi Target:",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color = if (isDark) TextPrimaryDark else DeepBerryDark,
+            color = AraTheme.colors.textStrong,
             modifier = Modifier.align(Alignment.Start)
         )
 
@@ -415,10 +417,10 @@ private fun StepDailyTargetBudget(
                 Surface(
                     onClick = { onPresetSelected(preset) },
                     shape = RoundedCornerShape(14.dp),
-                    color = if (isSelected) PrimarySakuraPink else if (isDark) SurfaceCardDark else SurfaceCard,
+                    color = if (isSelected) AraTheme.colors.action else AraTheme.colors.surfaceCard,
                     border = BorderStroke(
                         1.2.dp,
-                        if (isSelected) PrimarySakuraPink else if (isDark) Color(0xFF4B2E52) else Color(0xFFF7E6EE)
+                        if (isSelected) PrimarySakuraPink else AraTheme.colors.border
                     ),
                     modifier = Modifier.weight(1f)
                 ) {
@@ -430,7 +432,7 @@ private fun StepDailyTargetBudget(
                             text = CurrencyFormatter.formatRupiah(preset),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color.White else if (isDark) TextPrimaryDark else DeepBerryDark
+                            color = if (isSelected) Color.White else AraTheme.colors.textStrong
                         )
                     }
                 }
@@ -446,8 +448,8 @@ private fun StepDailyTargetBudget(
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimarySakuraPink,
-                focusedLabelColor = PrimarySakuraPink
+                focusedBorderColor = AraTheme.colors.accent,
+                focusedLabelColor = AraTheme.colors.accent
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -469,12 +471,12 @@ private fun StepDailyTargetBudget(
                         text = "✨ Estimasi Daya Tahan Saldo",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = PrimarySakuraPink
+                        color = AraTheme.colors.accent
                     )
                     Text(
                         text = "Dengan saldo awal ${CurrencyFormatter.formatRupiah(initialBalance)} dan target ${CurrencyFormatter.formatRupiah(activeTarget)}/hari, saldo Kakak diperkirakan cukup untuk ~$estimatedDays hari ke depan! 🎀",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                 }
             }

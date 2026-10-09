@@ -1,4 +1,6 @@
-﻿package com.aramoney.app.presentation.profile
+package com.aramoney.app.presentation.profile
+
+import com.aramoney.app.presentation.theme.AraTheme
 
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -120,7 +122,7 @@ fun EditProfileDialog(
                 text = "Profil Pengguna 🌸",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
         },
         text = {
@@ -137,7 +139,7 @@ fun EditProfileDialog(
                         .size(88.dp)
                         .clip(CircleShape)
                         .border(3.dp, PrimarySakuraPink, CircleShape)
-                        .background(if (isDark) SurfaceCardDark else SurfaceCard),
+                        .background(AraTheme.colors.surfaceCard),
                     contentAlignment = Alignment.Center
                 ) {
                     if (previewBitmap != null) {
@@ -184,13 +186,13 @@ fun EditProfileDialog(
                             imageVector = Icons.Rounded.AddPhotoAlternate,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = PrimarySakuraPink
+                            tint = AraTheme.colors.accent
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = if (previewBitmap != null) "Ganti Foto" else "Pilih dari Galeri",
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (isDark) TextPrimaryDark else DeepBerryDark
+                            color = AraTheme.colors.textStrong
                         )
                     }
 
@@ -203,20 +205,20 @@ fun EditProfileDialog(
                             },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = ErrorSoftRed
+                                contentColor = AraTheme.colors.danger
                             )
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Delete,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = ErrorSoftRed
+                                tint = AraTheme.colors.danger
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Hapus",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = ErrorSoftRed
+                                color = AraTheme.colors.danger
                             )
                         }
                     }
@@ -231,8 +233,8 @@ fun EditProfileDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimarySakuraPink,
-                        cursorColor = PrimarySakuraPink
+                        focusedBorderColor = AraTheme.colors.accent,
+                        cursorColor = AraTheme.colors.accent
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -246,7 +248,7 @@ fun EditProfileDialog(
                         text = "Atau Pilih Karakter Avatar Lucu:",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
 
                     val rows = ProfileAvatarHelper.presets.chunked(4)
@@ -265,7 +267,7 @@ fun EditProfileDialog(
                                         .background(preset.bgColor)
                                         .border(
                                             width = if (isSelected) 3.dp else 1.dp,
-                                            color = if (isSelected) PrimarySakuraPink else Color.Transparent,
+                                            color = if (isSelected) AraTheme.colors.action else Color.Transparent,
                                             shape = CircleShape
                                         )
                                         .clickable {
@@ -311,7 +313,7 @@ fun EditProfileDialog(
                     val finalName = if (name.isNotBlank()) name.trim() else initialName
                     onSave(finalName, selectedPresetId, selectedPhotoUri, isPhotoCleared)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text("Simpan", fontWeight = FontWeight.Bold, color = Color.White)

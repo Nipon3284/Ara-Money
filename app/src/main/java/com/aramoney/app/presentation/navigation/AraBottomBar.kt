@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.navigation
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -10,8 +12,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.ripple
 import com.aramoney.app.presentation.theme.isAppInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -126,7 +130,7 @@ private fun AraBottomNavItem(
 
     val pillBackground by animateColorAsState(
         targetValue = if (isSelected) {
-            if (isDark) Color(0xFF562260) else PrimarySakuraPinkContainer
+            AraTheme.colors.selectedContainer
         } else Color.Transparent,
         animationSpec = tween(durationMillis = 180),
         label = "PillBg"
@@ -134,9 +138,9 @@ private fun AraBottomNavItem(
 
     val contentTint by animateColorAsState(
         targetValue = if (isSelected) {
-            PrimarySakuraPink
+            AraTheme.colors.accent
         } else {
-            if (isDark) Color(0xFFB38CAE) else DeepBerry.copy(alpha = 0.65f)
+            if (isDark) Color(0xFFC9A6C4) else DeepBerry.copy(alpha = 0.75f)
         },
         animationSpec = tween(durationMillis = 180),
         label = "ContentTint"
@@ -145,17 +149,19 @@ private fun AraBottomNavItem(
     Box(
         modifier = Modifier
             .scale(scaleAnim)
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
             .clip(RoundedCornerShape(18.dp))
             .background(pillBackground)
-            .clickable(
+            .selectable(
+                selected = isSelected,
                 interactionSource = interactionSource,
-                indication = null,
+                indication = ripple(),
+                role = Role.Tab,
                 onClick = onClick
             )
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .semantics {
-                role = Role.Tab
-                contentDescription = "Tab ${screen.title}, ${if (isSelected) "aktif" else "tidak aktif"}"
+                contentDescription = screen.title
             },
         contentAlignment = Alignment.Center
     ) {
@@ -180,8 +186,7 @@ private fun AraBottomNavItem(
                     text = screen.title,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) Color(0xFFF8E9F0) else DeepBerryDark,
-                    fontSize = 13.sp,
+                    color = AraTheme.colors.onSelectedContainer,
                     maxLines = 1,
                     softWrap = false
                 )

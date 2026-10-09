@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.components
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -131,7 +133,7 @@ fun AraPrimaryButton(
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = PrimarySakuraPink,
+            containerColor = AraTheme.colors.action,
             contentColor = Color.White
         ),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),

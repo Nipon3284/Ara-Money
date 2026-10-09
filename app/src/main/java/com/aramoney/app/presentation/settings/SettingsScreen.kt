@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.settings
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -152,7 +154,7 @@ fun SettingsScreen(
                         text = "Pengaturan",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                 }
             }
@@ -198,7 +200,7 @@ fun SettingsScreen(
                             Icon(
                                 imageVector = Icons.Rounded.Category,
                                 contentDescription = null,
-                                tint = DeepBerry,
+                                tint = AraTheme.colors.berry,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -208,12 +210,12 @@ fun SettingsScreen(
                                 text = "Kelola Kategori Transaksi",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                                color = AraTheme.colors.textStrong
                             )
                             Text(
                                 text = "${uiState.categories.size} kategori aktif • Tambah, ubah, hapus",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PrimarySakuraPink
+                                color = AraTheme.colors.accent
                             )
                         }
 
@@ -267,7 +269,7 @@ fun SettingsScreen(
                     ) {
                         Button(
                             onClick = { exportLauncher.launch("ara_money_backup_${System.currentTimeMillis()}.json") },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                            colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -283,7 +285,7 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Rounded.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Pulihkan", color = if (isDark) TextPrimaryDark else DeepBerryDark)
+                            Text("Pulihkan", color = AraTheme.colors.textStrong)
                         }
                     }
                 }
@@ -335,7 +337,7 @@ fun SettingsScreen(
                     text = "Pulihkan Data Cadangan? 📥",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
             },
             text = {
@@ -352,7 +354,7 @@ fun SettingsScreen(
                     Text(
                         text = "Data yang ada akan digabungkan secara aman tanpa menghapus histori sebelumnya.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = PrimarySakuraPink,
+                        color = AraTheme.colors.accent,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -360,7 +362,7 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = { viewModel.confirmRestore() },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text("Lanjutkan Pulihkan 🌸", fontWeight = FontWeight.Bold, color = Color.White)
@@ -391,7 +393,7 @@ private fun ProfileCard(
             .fillMaxWidth()
             .softShadow(elevation = 3.dp, shape = RoundedCornerShape(22.dp)),
         shape = RoundedCornerShape(22.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        color = AraTheme.colors.surfaceElevated
     ) {
         Row(
             modifier = Modifier
@@ -417,7 +419,7 @@ private fun ProfileCard(
                         text = userName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                     Text(
                         text = "Pengguna Lokal • 100% Offline 🌸",
@@ -434,7 +436,7 @@ private fun ProfileCard(
                 Icon(
                     imageVector = Icons.Rounded.Edit,
                     contentDescription = null,
-                    tint = PrimarySakuraPink,
+                    tint = AraTheme.colors.accent,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
@@ -442,7 +444,7 @@ private fun ProfileCard(
                     text = "Ubah",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = PrimarySakuraPink
+                    color = AraTheme.colors.accent
                 )
             }
         }
@@ -461,7 +463,7 @@ private fun SettingsSectionCard(
             .fillMaxWidth()
             .softShadow(elevation = 3.dp, shape = RoundedCornerShape(22.dp)),
         shape = RoundedCornerShape(22.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        color = AraTheme.colors.surfaceElevated
     ) {
         Column(
             modifier = Modifier
@@ -478,7 +480,7 @@ private fun SettingsSectionCard(
                     text = title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
                 action?.invoke()
             }
@@ -511,7 +513,7 @@ private fun SettingsActionRow(
                 .background(PrimarySakuraPink.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = DeepBerry, modifier = Modifier.size(20.dp))
+            Icon(imageVector = icon, contentDescription = null, tint = AraTheme.colors.berry, modifier = Modifier.size(20.dp))
         }
 
         Column(modifier = Modifier.weight(1f)) {
@@ -545,7 +547,7 @@ private fun ThemeSelectionRow(
                     .clip(RoundedCornerShape(14.dp))
                     .clickable { onModeSelect(mode) },
                 shape = RoundedCornerShape(14.dp),
-                color = if (isSelected) PrimarySakuraPinkContainer else if (isDark) SurfaceCardDark else SurfaceCard,
+                color = if (isSelected) AraTheme.colors.selectedContainer else AraTheme.colors.surfaceCard,
                 border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, PrimarySakuraPink) else null
             ) {
                 Column(
@@ -574,7 +576,7 @@ private fun AboutAppCard(isDark: Boolean) {
             .fillMaxWidth()
             .softShadow(elevation = 2.dp, shape = RoundedCornerShape(22.dp)),
         shape = RoundedCornerShape(22.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        color = AraTheme.colors.surfaceElevated
     ) {
         Column(
             modifier = Modifier
@@ -595,7 +597,7 @@ private fun AboutAppCard(isDark: Boolean) {
                 text = "Ara Money",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
             Text(
                 text = "Versi 1.0.0 • 100% Offline & Menjaga Privasimu",
@@ -605,7 +607,7 @@ private fun AboutAppCard(isDark: Boolean) {
             Text(
                 text = "Dibuat dengan 💜 oleh hansara untuk seluruh mahasiswi Indonesia",
                 style = MaterialTheme.typography.bodySmall,
-                color = PrimarySakuraPink,
+                color = AraTheme.colors.accent,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
@@ -639,7 +641,7 @@ private fun EditDailyTargetBudgetDialog(
                 text = "Target Jajan Harian 🌸",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
         },
         text = {
@@ -657,7 +659,7 @@ private fun EditDailyTargetBudgetDialog(
                     text = "Pilihan Rekomendasi:",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
 
                 Row(
@@ -672,10 +674,10 @@ private fun EditDailyTargetBudgetDialog(
                                 customBudgetText = ""
                             },
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) PrimarySakuraPink else if (isDark) SurfaceCardDark else SurfaceCard,
+                            color = if (isSelected) AraTheme.colors.action else AraTheme.colors.surfaceCard,
                             border = BorderStroke(
                                 1.2.dp,
-                                if (isSelected) PrimarySakuraPink else if (isDark) Color(0xFF4B2E52) else Color(0xFFF7E6EE)
+                                if (isSelected) PrimarySakuraPink else AraTheme.colors.border
                             ),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -687,7 +689,7 @@ private fun EditDailyTargetBudgetDialog(
                                     text = CurrencyFormatter.formatRupiah(preset),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else if (isDark) TextPrimaryDark else DeepBerryDark
+                                    color = if (isSelected) Color.White else AraTheme.colors.textStrong
                                 )
                             }
                         }
@@ -707,8 +709,8 @@ private fun EditDailyTargetBudgetDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimarySakuraPink,
-                        focusedLabelColor = PrimarySakuraPink
+                        focusedBorderColor = AraTheme.colors.accent,
+                        focusedLabelColor = AraTheme.colors.accent
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -720,7 +722,7 @@ private fun EditDailyTargetBudgetDialog(
                     val finalAmount = selectedPreset ?: customBudgetText.toDoubleOrNull() ?: 30_000.0
                     onSave(if (finalAmount > 0) finalAmount else 30_000.0)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text("Simpan", fontWeight = FontWeight.Bold, color = Color.White)

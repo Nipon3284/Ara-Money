@@ -1,11 +1,14 @@
 package com.aramoney.app.presentation.components
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import com.aramoney.app.presentation.theme.isAppInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -78,7 +81,7 @@ fun CategoryChip(
     )
 
     val chipBackground = when {
-        isSelected -> if (isDark) Color(0xFF532457) else PrimarySakuraPinkContainer
+        isSelected -> AraTheme.colors.selectedContainer
         isDark -> SurfaceDark
         else -> SurfaceCard
     }
@@ -86,7 +89,7 @@ fun CategoryChip(
     val chipBorder = if (isSelected) {
         BorderStroke(1.8.dp, borderColorAnim)
     } else {
-        BorderStroke(1.dp, if (isDark) Color(0xFF4B2E52) else Color(0xFFF7E6EE))
+        BorderStroke(1.dp, AraTheme.colors.border)
     }
 
     Surface(
@@ -99,8 +102,8 @@ fun CategoryChip(
                 shadowColor = PrimarySakuraPink.copy(alpha = if (isSelected) 0.25f else 0.10f)
             )
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = "Kategori ${category.name}, ${if (isSelected) "terpilih" else "tidak terpilih"}" },
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
+            .semantics { contentDescription = "Kategori ${category.name}" },
         shape = RoundedCornerShape(16.dp),
         color = chipBackground,
         border = chipBorder
@@ -134,7 +137,39 @@ fun CategoryChip(
                 text = category.name,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) DeepBerry else MaterialTheme.colorScheme.onSurface
+                color = if (isSelected) AraTheme.colors.onSelectedContainer else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+/**
+ * Chip "Semua" untuk menghapus filter kategori, gaya visual sama dengan [CategoryChip].
+ */
+@Composable
+fun AllCategoryChip(
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .defaultMinSize(minHeight = 48.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) AraTheme.colors.selectedContainer else AraTheme.colors.surfaceCard,
+        border = if (isSelected) BorderStroke(1.8.dp, PrimarySakuraPink) else BorderStroke(1.dp, AraTheme.colors.border)
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Semua",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) AraTheme.colors.onSelectedContainer else MaterialTheme.colorScheme.onSurface
             )
         }
     }

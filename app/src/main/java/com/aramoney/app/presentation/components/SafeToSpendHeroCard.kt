@@ -4,6 +4,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,9 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.aramoney.app.domain.model.SafeToSpendState
 import com.aramoney.app.presentation.theme.HeroGradientEnd
 import com.aramoney.app.presentation.theme.HeroGradientStart
@@ -41,46 +46,45 @@ import com.aramoney.app.presentation.theme.softShadow
 import com.aramoney.app.util.CurrencyFormatter
 
 /**
- * Hero Card utama dengan konsep Triple-Lens Financial Horizon:
- * 1. Lensa Rata-Rata Aktual (Highlight Utama)
- * 2. Lensa Sisa Jatah Hari Ini (Micro-Action)
- * 3. Lensa Daya Tahan Saldo / Runway (Peace of Mind)
+ * Hero Card utama Beranda. Hierarki informasi:
+ * 1. Jatah Hari Ini (angka terbesar — menjawab "hari ini aku masih boleh jajan berapa?")
+ * 2. Pesan empatis sesuai status
+ * 3. Metrik pendukung: Rata-rata harian bulan ini & Daya Tahan saldo
+ * 4. Footer: Total saldo & target harian
  */
 @Composable
 fun SafeToSpendHeroCard(
     state: SafeToSpendState,
     modifier: Modifier = Modifier,
-    onCardClick: () -> Unit = {}
+    onCardClick: (() -> Unit)? = null
 ) {
-    val targetNominal = when (state) {
-        is SafeToSpendState.Aman -> state.dailyAverageExpense.toFloat()
-        is SafeToSpendState.Waspada -> state.dailyAverageExpense.toFloat()
-        is SafeToSpendState.Bahaya -> state.dailyAverageExpense.toFloat()
-        is SafeToSpendState.EmptyBalance -> state.dailyAverageExpense.toFloat()
-        else -> 0f
-    }
+    val metrics = state.toHeroMetrics()
 
-    // Animasi Count-Up angka pengeluaran rata-rata harian (600ms smooth)
+    // Animasi Count-Up angka jatah hari ini (600ms smooth)
     val animatedNominal by animateFloatAsState(
-        targetValue = targetNominal,
+        targetValue = metrics.remainingToday.toFloat(),
         animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
-        label = "HeroDailyAverageCountUp"
+        label = "HeroRemainingTodayCountUp"
     )
 
     val cardGradient = Brush.linearGradient(
         colors = listOf(HeroGradientStart, HeroGradientEnd)
     )
+    val shape = RoundedCornerShape(28.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .softShadow(
                 elevation = 12.dp,
-                shape = RoundedCornerShape(28.dp),
+                shape = shape,
                 shadowColor = HeroGradientStart.copy(alpha = 0.35f)
             )
-            .clip(RoundedCornerShape(28.dp))
+            .clip(shape)
             .background(cardGradient)
+            .then(
+                if (onCardClick != null) Modifier.clickable(onClick = onCardClick) else Modifier
+            )
             .padding(20.dp)
     ) {
         // Ornamen Bunga Sakura di sudut kanan atas
@@ -97,83 +101,72 @@ fun SafeToSpendHeroCard(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 1. Header: Status Tag Empatis & Indikator
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = Color.White.copy(alpha = 0.22f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        val (icon, statusText) = when (state) {
-                            is SafeToSpendState.Aman -> Icons.Rounded.CheckCircle to "Rata-Rata Terkendali 🌸"
-                            is SafeToSpendState.Waspada -> Icons.Rounded.WarningAmber to "Cek Pengeluaran 🍵"
-                            is SafeToSpendState.Bahaya -> Icons.Rounded.Favorite to "Perlu Hemat 🎀"
-                            else -> Icons.Rounded.CalendarMonth to "Kondisi Dompet 🌸"
-                        }
-                        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                        Text(
-                            text = statusText,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
+            // 1. Status Tag Empatis
+            val (icon, statusText) = when (state) {
+                is SafeToSpendState.Aman -> Icons.Rounded.CheckCircle to "Aman"
+                is SafeToSpendState.Waspada -> Icons.Rounded.WarningAmber to "Waspada"
+                is SafeToSpendState.Bahaya -> Icons.Rounded.Favorite to "Perlu Hemat"
+                else -> Icons.Rounded.CalendarMonth to "Kondisi Dompet"
             }
-
-            // 2. Angka Utama (Rata-rata Pengeluaran Per Hari)
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "Pengeluaran Rata-Rata Bulan Ini",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.88f)
-                )
-
+            Surface(
+                color = Color.White.copy(alpha = 0.22f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
                 Row(
-                    verticalAlignment = Alignment.Bottom,
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                        .semantics { contentDescription = "Status keuangan: $statusText" },
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
                     Text(
-                        text = CurrencyFormatter.formatRupiah(animatedNominal.toDouble()),
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp),
+                        text = statusText,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                }
+            }
+
+            // 2. Angka Utama: Jatah Hari Ini
+            Column(
+                modifier = Modifier.clearAndSetSemantics {
+                    heading()
+                    contentDescription = "Jatah jajan hari ini tersisa ${CurrencyFormatter.formatRupiah(metrics.remainingToday)}"
+                },
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = "Jatah Jajan Hari Ini",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+                Text(
+                    text = CurrencyFormatter.formatRupiah(animatedNominal.toDouble()),
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (metrics.todayExpense > 0.0) {
                     Text(
-                        text = "/ hari",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.padding(bottom = 4.dp)
+                        text = "Sudah terpakai ${CurrencyFormatter.formatRupiah(metrics.todayExpense)} hari ini",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.9f)
                     )
                 }
             }
 
             // 3. Pesan Empatis Pendukung (Frosted Glass Container)
-            val messageText = when (state) {
-                is SafeToSpendState.Aman -> state.message
-                is SafeToSpendState.Waspada -> state.message
-                is SafeToSpendState.Bahaya -> state.message
-                is SafeToSpendState.NeedsDateUpdate -> state.message
-                is SafeToSpendState.NeedsSetup -> state.message
-                is SafeToSpendState.EmptyBalance -> state.message
-            }
-
             Surface(
                 color = Color.White.copy(alpha = 0.18f),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = messageText,
+                    text = metrics.message,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
@@ -181,124 +174,104 @@ fun SafeToSpendHeroCard(
                 )
             }
 
-            // 4. Dua Kartu Mini: Sisa Kuota Hari Ini & Daya Tahan Saldo
-            val remainingTodayBudget = when (state) {
-                is SafeToSpendState.Aman -> state.remainingTodayBudget
-                is SafeToSpendState.Waspada -> state.remainingTodayBudget
-                is SafeToSpendState.Bahaya -> state.remainingTodayBudget
-                is SafeToSpendState.EmptyBalance -> state.remainingTodayBudget
-                else -> 0.0
-            }
-
-            val remainingDays = when (state) {
-                is SafeToSpendState.Aman -> state.remainingDays
-                is SafeToSpendState.Waspada -> state.remainingDays
-                is SafeToSpendState.Bahaya -> state.remainingDays
-                is SafeToSpendState.EmptyBalance -> state.remainingDays
-                else -> 0L
-            }
-
-            val totalBalance = when (state) {
-                is SafeToSpendState.Aman -> state.totalBalance
-                is SafeToSpendState.Waspada -> state.totalBalance
-                is SafeToSpendState.Bahaya -> state.totalBalance
-                is SafeToSpendState.NeedsDateUpdate -> state.totalBalance
-                is SafeToSpendState.EmptyBalance -> state.totalBalance
-                else -> 0.0
-            }
-
-            val dailyTargetBudget = when (state) {
-                is SafeToSpendState.Aman -> state.dailyTargetBudget
-                is SafeToSpendState.Waspada -> state.dailyTargetBudget
-                is SafeToSpendState.Bahaya -> state.dailyTargetBudget
-                else -> 0.0
-            }
-
+            // 4. Dua Kartu Mini: Rata-rata Harian & Daya Tahan Saldo
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Sisa Kuota Hari Ini
-                Surface(
-                    color = Color.Black.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(14.dp),
+                HeroMiniMetric(
+                    label = "Rata-rata / hari",
+                    value = CurrencyFormatter.formatRupiah(metrics.dailyAverage),
                     modifier = Modifier.weight(1f)
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Text(
-                            text = "Jatah Hari Ini",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = CurrencyFormatter.formatRupiah(remainingTodayBudget),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
-
-                // Daya Tahan Saldo (Runway)
-                Surface(
-                    color = Color.Black.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(14.dp),
+                )
+                HeroMiniMetric(
+                    label = "Daya Tahan Saldo",
+                    value = if (metrics.remainingDays <= 0L) "< 1 hari" else "${metrics.remainingDays} hari",
                     modifier = Modifier.weight(1f)
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Text(
-                            text = "Daya Tahan",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = if (remainingDays <= 0L) "< 1 Hari" else "$remainingDays Hari Lagi",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
+                )
             }
 
-            // Total Saldo Berjalan & Target di bagian bawah
+            // 5. Footer: Total Saldo & Target
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Total Saldo: ",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.85f)
-                    )
-                    Text(
-                        text = CurrencyFormatter.formatRupiah(totalBalance),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                if (dailyTargetBudget > 0) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Target: ",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                        Text(
-                            text = "${CurrencyFormatter.formatRupiah(dailyTargetBudget)}/hr",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
+                HeroFooterLabel(label = "Total Saldo", value = CurrencyFormatter.formatRupiah(metrics.totalBalance))
+                if (metrics.dailyTarget > 0) {
+                    HeroFooterLabel(label = "Target", value = "${CurrencyFormatter.formatRupiah(metrics.dailyTarget)}/hari")
                 }
             }
         }
     }
+}
+
+@Composable
+private fun HeroMiniMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        color = Color.Black.copy(alpha = 0.14f),
+        shape = RoundedCornerShape(14.dp),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(10.dp)
+                .clearAndSetSemantics { contentDescription = "$label: $value" }
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeroFooterLabel(label: String, value: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clearAndSetSemantics { contentDescription = "$label: $value" }
+    ) {
+        Text(
+            text = "$label: ",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.9f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+    }
+}
+
+/** Ringkasan angka yang dibutuhkan Hero Card dari setiap varian [SafeToSpendState]. */
+private data class HeroMetrics(
+    val remainingToday: Double,
+    val todayExpense: Double,
+    val dailyAverage: Double,
+    val remainingDays: Long,
+    val totalBalance: Double,
+    val dailyTarget: Double,
+    val message: String
+)
+
+private fun SafeToSpendState.toHeroMetrics(): HeroMetrics = when (this) {
+    is SafeToSpendState.Aman -> HeroMetrics(remainingTodayBudget, todayExpense, dailyAverageExpense, remainingDays, totalBalance, dailyTargetBudget, message)
+    is SafeToSpendState.Waspada -> HeroMetrics(remainingTodayBudget, todayExpense, dailyAverageExpense, remainingDays, totalBalance, dailyTargetBudget, message)
+    is SafeToSpendState.Bahaya -> HeroMetrics(remainingTodayBudget, todayExpense, dailyAverageExpense, remainingDays, totalBalance, dailyTargetBudget, message)
+    is SafeToSpendState.EmptyBalance -> HeroMetrics(remainingTodayBudget, 0.0, dailyAverageExpense, remainingDays, totalBalance, 0.0, message)
+    is SafeToSpendState.NeedsDateUpdate -> HeroMetrics(0.0, 0.0, 0.0, 0L, totalBalance, 0.0, message)
+    is SafeToSpendState.NeedsSetup -> HeroMetrics(0.0, 0.0, 0.0, 0L, 0.0, 0.0, message)
 }

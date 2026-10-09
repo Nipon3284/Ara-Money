@@ -1,5 +1,15 @@
 package com.aramoney.app.presentation.category
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -108,7 +118,7 @@ fun ManageCategoriesScreen(
                     Text(
                         text = "Kategori Transaksi 🏷️",
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark,
+                        color = AraTheme.colors.textStrong,
                         fontSize = 20.sp
                     )
                 },
@@ -117,7 +127,7 @@ fun ManageCategoriesScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = "Kembali",
-                            tint = if (isDark) TextPrimaryDark else DeepBerryDark
+                            tint = AraTheme.colors.textStrong
                         )
                     }
                 },
@@ -126,7 +136,7 @@ fun ManageCategoriesScreen(
                         Icon(
                             imageVector = Icons.Rounded.Add,
                             contentDescription = "Tambah Kategori",
-                            tint = PrimarySakuraPink,
+                            tint = AraTheme.colors.accent,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -159,7 +169,7 @@ fun ManageCategoriesScreen(
                         .fillMaxWidth()
                         .softShadow(elevation = 2.dp, shape = RoundedCornerShape(18.dp)),
                     shape = RoundedCornerShape(18.dp),
-                    color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+                    color = AraTheme.colors.surfaceElevated
                 ) {
                     Column(
                         modifier = Modifier
@@ -171,7 +181,7 @@ fun ManageCategoriesScreen(
                             text = "Kelola Semua Kategori 🌸",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) TextPrimaryDark else DeepBerryDark
+                            color = AraTheme.colors.textStrong
                         )
                         Text(
                             text = "Kamu bisa menambah kategori baru, mengubah nama, ikon, atau warna pastel, serta menghapus kategori yang tidak diperlukan.",
@@ -205,7 +215,7 @@ fun ManageCategoriesScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { viewModel.setTabFilter(filter) },
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) PrimarySakuraPinkContainer else if (isDark) SurfaceCardDark else SurfaceCard,
+                            color = if (isSelected) AraTheme.colors.selectedContainer else AraTheme.colors.surfaceCard,
                             border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, PrimarySakuraPink) else null
                         ) {
                             Text(
@@ -295,7 +305,7 @@ private fun CategoryManageCard(
             .fillMaxWidth()
             .softShadow(elevation = 1.dp, shape = RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        color = AraTheme.colors.surfaceElevated
     ) {
         Row(
             modifier = Modifier
@@ -331,7 +341,7 @@ private fun CategoryManageCard(
                         text = category.name,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -345,7 +355,7 @@ private fun CategoryManageCard(
                                 text = if (category.isExpense) "Pengeluaran" else "Pemasukan",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Medium,
-                                color = if (category.isExpense) PrimarySakuraPink else SuccessMintGreen,
+                                color = if (category.isExpense) AraTheme.colors.accent else AraTheme.colors.income,
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                                 fontSize = 11.sp
                             )
@@ -375,20 +385,20 @@ private fun CategoryManageCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
                             contentDescription = "Ubah kategori ${category.name}",
-                            tint = PrimarySakuraPink,
+                            tint = AraTheme.colors.accent,
                             modifier = Modifier.size(20.dp)
                         )
                     }
 
-                    IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                         Icon(
                             imageVector = Icons.Rounded.Delete,
                             contentDescription = "Hapus kategori ${category.name}",
-                            tint = ErrorSoftRed,
+                            tint = AraTheme.colors.danger,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -396,13 +406,13 @@ private fun CategoryManageCard(
             } else {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFE57373).copy(alpha = 0.12f)
+                    color = AraTheme.colors.danger.copy(alpha = 0.12f)
                 ) {
                     Text(
                         text = "Terkunci 🔒",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFE57373),
+                        color = AraTheme.colors.danger,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
@@ -411,6 +421,7 @@ private fun CategoryManageCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ManageCategoryFormDialog(
     formState: CategoryFormState,
@@ -439,7 +450,7 @@ private fun ManageCategoryFormDialog(
                 text = if (formState.isEdit) "Ubah Kategori ✏️" else "Tambah Kategori 🎀",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
         },
         text = {
@@ -482,8 +493,8 @@ private fun ManageCategoryFormDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimarySakuraPink,
-                        cursorColor = PrimarySakuraPink
+                        focusedBorderColor = AraTheme.colors.accent,
+                        cursorColor = AraTheme.colors.accent
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -498,7 +509,7 @@ private fun ManageCategoryFormDialog(
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { isExpense = true },
-                        color = if (isExpense) PrimarySakuraPink else if (isDark) SurfaceCardDark else SurfaceCard,
+                        color = if (isExpense) AraTheme.colors.action else AraTheme.colors.surfaceCard,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
@@ -516,7 +527,7 @@ private fun ManageCategoryFormDialog(
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { isExpense = false },
-                        color = if (!isExpense) SuccessMintGreen else if (isDark) SurfaceCardDark else SurfaceCard,
+                        color = if (!isExpense) SuccessMintGreen else AraTheme.colors.surfaceCard,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
@@ -535,21 +546,33 @@ private fun ManageCategoryFormDialog(
                     text = "Pilih Warna Aksen:",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    colorOptions.forEach { hex ->
+                    colorOptions.forEachIndexed { index, hex ->
                         val col = runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(PrimarySakuraPink)
                         val isSel = selectedColor.equals(hex, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .selectable(
+                                    selected = isSel,
+                                    role = Role.RadioButton,
+                                    onClick = { selectedColor = hex }
+                                )
+                                .semantics { contentDescription = "Warna ${index + 1}" },
+                            contentAlignment = Alignment.Center
+                        ) {
                         Box(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
                                 .background(col)
-                                .clickable { selectedColor = hex }
                                 .border(
                                     width = if (isSel) 2.5.dp else 0.dp,
                                     color = if (isSel) (if (isDark) Color.White else DeepBerryDark) else Color.Transparent,
@@ -566,6 +589,7 @@ private fun ManageCategoryFormDialog(
                                 )
                             }
                         }
+                        }
                     }
                 }
 
@@ -574,7 +598,7 @@ private fun ManageCategoryFormDialog(
                     text = "Pilih Ikon (${availableCategoryIcons.size} Pilihan):",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
 
                 // Grid 5 kolom ikon
@@ -629,7 +653,7 @@ private fun ManageCategoryFormDialog(
             Button(
                 onClick = { onSave(name, selectedIcon, selectedColor, isExpense) },
                 enabled = name.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text("Simpan", fontWeight = FontWeight.Bold, color = Color.White)
@@ -659,7 +683,7 @@ private fun ManageCategoryDeleteDialog(
                 text = "Hapus Kategori? 🗑️",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
         },
         text = {
@@ -679,7 +703,7 @@ private fun ManageCategoryDeleteDialog(
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = ErrorSoftRed),
+                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.danger),
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text("Hapus", fontWeight = FontWeight.Bold, color = Color.White)

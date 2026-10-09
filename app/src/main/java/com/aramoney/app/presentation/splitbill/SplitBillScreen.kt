@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.splitbill
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -132,7 +134,7 @@ fun SplitBillScreen(
                         text = "Hutang & Piutang",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                 }
             }
@@ -140,7 +142,7 @@ fun SplitBillScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.openAddDialog() },
-                containerColor = PrimarySakuraPink,
+                containerColor = AraTheme.colors.action,
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
@@ -192,7 +194,7 @@ fun SplitBillScreen(
                         text = if (uiState.selectedTab == "I_PAID_FOR_FRIEND") "Daftar Yang Berutang" else "Daftar Hutang Saya",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
 
                     if (uiState.personGroups.isNotEmpty()) {
@@ -311,7 +313,7 @@ fun SplitBillScreen(
                     text = "Selesaikan Pelunasan? ✨",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
             },
             text = {
@@ -327,7 +329,7 @@ fun SplitBillScreen(
                     )
 
                     Surface(
-                        color = if (isDark) SurfaceCardDark else SurfaceCard,
+                        color = AraTheme.colors.surfaceCard,
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -345,7 +347,7 @@ fun SplitBillScreen(
                                 checked = uiState.isAutoCreateTransactionChecked,
                                 onCheckedChange = { viewModel.setAutoCreateTransaction(it) },
                                 colors = CheckboxDefaults.colors(
-                                    checkedColor = PrimarySakuraPink,
+                                    checkedColor = AraTheme.colors.action,
                                     checkmarkColor = Color.White
                                 )
                             )
@@ -354,7 +356,7 @@ fun SplitBillScreen(
                                     text = if (isIncome) "Masukkan ke Kas (Pemasukan)" else "Potong dari Kas (Pengeluaran)",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                                    color = AraTheme.colors.textStrong
                                 )
                                 Text(
                                     text = if (isIncome) {
@@ -373,7 +375,7 @@ fun SplitBillScreen(
             confirmButton = {
                 Button(
                     onClick = { viewModel.confirmSettleDebt() },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text("Ya, Selesaikan", fontWeight = FontWeight.Bold, color = Color.White)
@@ -401,7 +403,7 @@ fun SplitBillScreen(
                     text = "Hapus Catatan? 🥺",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
             },
             text = {
@@ -414,7 +416,7 @@ fun SplitBillScreen(
             confirmButton = {
                 Button(
                     onClick = { viewModel.confirmDeleteDebt() },
-                    colors = ButtonDefaults.buttonColors(containerColor = ErrorSoftRed),
+                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.danger),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text("Ya, Hapus", fontWeight = FontWeight.Bold, color = Color.White)
@@ -507,7 +509,7 @@ private fun DebtDirectionTabs(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = if (isDark) SurfaceCardDark else SurfaceCard
+        color = AraTheme.colors.surfaceCard
     ) {
         Row(
             modifier = Modifier
@@ -522,7 +524,7 @@ private fun DebtDirectionTabs(
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { onTabSelected("I_PAID_FOR_FRIEND") },
                 shape = RoundedCornerShape(12.dp),
-                color = if (isFriendOwesMe) PrimarySakuraPink else Color.Transparent
+                color = if (isFriendOwesMe) AraTheme.colors.action else Color.Transparent
             ) {
                 Text(
                     text = "🌸 Piutang (Mereka Berutang)",
@@ -541,7 +543,7 @@ private fun DebtDirectionTabs(
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { onTabSelected("FRIEND_PAID_FOR_ME") },
                 shape = RoundedCornerShape(12.dp),
-                color = if (isIOweFriend) PrimarySakuraPink else Color.Transparent
+                color = if (isIOweFriend) AraTheme.colors.action else Color.Transparent
             ) {
                 Text(
                     text = "🌷 Utang (Saya Berutang)",
@@ -580,7 +582,7 @@ private fun PersonDebtGroupCard(
             .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        color = AraTheme.colors.surfaceElevated
     ) {
         Row(
             modifier = Modifier
@@ -601,7 +603,7 @@ private fun PersonDebtGroupCard(
                     text = initials,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isAllSettled) (if (isDark) SuccessMintGreen else Color(0xFF2E7D32)) else PrimarySakuraPink
+                    color = if (isAllSettled) AraTheme.colors.income else PrimarySakuraPink
                 )
             }
 
@@ -614,14 +616,14 @@ private fun PersonDebtGroupCard(
                     text = personGroup.friendName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
 
                 if (isAllSettled) {
                     Text(
                         text = "Semua catatan lunas ✨",
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isDark) SuccessMintGreen else Color(0xFF2E7D32),
+                        color = AraTheme.colors.income,
                         fontWeight = FontWeight.SemiBold
                     )
                 } else {
@@ -680,7 +682,7 @@ private fun PersonDetailSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        containerColor = AraTheme.colors.surfaceElevated
     ) {
         Column(
             modifier = Modifier
@@ -701,7 +703,7 @@ private fun PersonDetailSheet(
                         text = personGroup.friendName,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                     Text(
                         text = if (personGroup.direction == "I_PAID_FOR_FRIEND") "Dihutangi oleh ${personGroup.friendName}" else "Hutang ke ${personGroup.friendName}",
@@ -714,7 +716,7 @@ private fun PersonDetailSheet(
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = "Tutup",
-                        tint = if (isDark) TextPrimaryDark else DeepBerryDark
+                        tint = AraTheme.colors.textStrong
                     )
                 }
             }
@@ -723,7 +725,7 @@ private fun PersonDetailSheet(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
-                color = if (isDark) SurfaceCardDark else SurfaceCard
+                color = AraTheme.colors.surfaceCard
             ) {
                 Row(
                     modifier = Modifier
@@ -742,14 +744,14 @@ private fun PersonDetailSheet(
                             text = CurrencyFormatter.formatRupiah(personGroup.totalUnsettledAmount),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = PrimarySakuraPink
+                            color = AraTheme.colors.accent
                         )
                     }
 
                     Button(
                         onClick = onAddRecordClick,
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink)
+                        colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action)
                     ) {
                         Icon(imageVector = Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.size(6.dp))
@@ -762,7 +764,7 @@ private fun PersonDetailSheet(
                 text = "Riwayat Catatan (${personGroup.debts.size})",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
 
             // List Sub-Catatan Pinjaman / Pembayaran
@@ -793,7 +795,7 @@ private fun SubDebtItemCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = if (isDark) SurfaceCardDark else SurfaceCard,
+        color = AraTheme.colors.surfaceCard,
         border = BorderStroke(
             1.dp,
             if (debt.isSettled) Color.Transparent else PrimarySakuraPink.copy(alpha = 0.3f)
@@ -815,7 +817,7 @@ private fun SubDebtItemCard(
                         text = if (debt.note.isNotBlank()) debt.note else "Tanpa catatan",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                     Text(
                         text = DateTimeUtil.formatTransactionDate(debt.createdAt),
@@ -851,20 +853,20 @@ private fun SubDebtItemCard(
                             Icon(
                                 imageVector = Icons.Rounded.CheckCircle,
                                 contentDescription = null,
-                                tint = if (isDark) SuccessMintGreen else Color(0xFF2E7D32),
+                                tint = AraTheme.colors.income,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = "Lunas",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isDark) SuccessMintGreen else Color(0xFF2E7D32)
+                                color = AraTheme.colors.income
                             )
                         }
                     }
                 } else {
                     Surface(
-                        color = Color(0xFFFFF3CD),
+                        color = AraTheme.colors.warningContainer,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(
@@ -875,14 +877,14 @@ private fun SubDebtItemCard(
                             Icon(
                                 imageVector = Icons.Rounded.HourglassEmpty,
                                 contentDescription = null,
-                                tint = Color(0xFF856404),
+                                tint = AraTheme.colors.onWarningContainer,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = "Belum Lunas",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF856404)
+                                color = AraTheme.colors.onWarningContainer
                             )
                         }
                     }
@@ -896,7 +898,7 @@ private fun SubDebtItemCard(
                         Button(
                             onClick = onSettle,
                             shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                            colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             modifier = Modifier.height(34.dp)
                         ) {
@@ -907,12 +909,12 @@ private fun SubDebtItemCard(
                     // Edit button (CRUD - Can edit anytime!)
                     IconButton(
                         onClick = onEdit,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
                             contentDescription = "Ubah catatan",
-                            tint = PrimarySakuraPink,
+                            tint = AraTheme.colors.accent,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -920,18 +922,17 @@ private fun SubDebtItemCard(
                     // Delete button
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Delete,
                             contentDescription = "Hapus catatan",
-                            tint = ErrorSoftRed,
+                            tint = AraTheme.colors.danger,
                             modifier = Modifier.size(18.dp)
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -963,7 +964,7 @@ private fun AddDebtDialog(
                 text = "Catat Hutang / Piutang 🎀",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
         },
         text = {
@@ -980,7 +981,7 @@ private fun AddDebtDialog(
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { direction = "I_PAID_FOR_FRIEND" },
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isPiutang) PrimarySakuraPink else (if (isDark) SurfaceCardDark else SurfaceCard)
+                        color = if (isPiutang) AraTheme.colors.action else AraTheme.colors.surfaceCard
                     ) {
                         Text(
                             text = "Piutang (Dia Utang)",
@@ -999,7 +1000,7 @@ private fun AddDebtDialog(
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { direction = "FRIEND_PAID_FOR_ME" },
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isUtang) PrimarySakuraPink else (if (isDark) SurfaceCardDark else SurfaceCard)
+                        color = if (isUtang) AraTheme.colors.action else AraTheme.colors.surfaceCard
                     ) {
                         Text(
                             text = "Utang (Saya Utang)",
@@ -1048,7 +1049,7 @@ private fun AddDebtDialog(
             Button(
                 onClick = { onConfirm(friendName, amountValue, note, direction) },
                 enabled = canSubmit,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text("Simpan 🌸", fontWeight = FontWeight.Bold, color = Color.White)
@@ -1091,7 +1092,7 @@ private fun EditDebtDialog(
                 text = "Ubah Catatan Hutang ✏️",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
         },
         text = {
@@ -1108,7 +1109,7 @@ private fun EditDebtDialog(
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { direction = "I_PAID_FOR_FRIEND" },
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isPiutang) PrimarySakuraPink else (if (isDark) SurfaceCardDark else SurfaceCard)
+                        color = if (isPiutang) AraTheme.colors.action else AraTheme.colors.surfaceCard
                     ) {
                         Text(
                             text = "Piutang (Dia Utang)",
@@ -1127,7 +1128,7 @@ private fun EditDebtDialog(
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { direction = "FRIEND_PAID_FOR_ME" },
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isUtang) PrimarySakuraPink else (if (isDark) SurfaceCardDark else SurfaceCard)
+                        color = if (isUtang) AraTheme.colors.action else AraTheme.colors.surfaceCard
                     ) {
                         Text(
                             text = "Utang (Saya Utang)",
@@ -1181,7 +1182,7 @@ private fun EditDebtDialog(
                     onConfirm(updated)
                 },
                 enabled = canSubmit,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text("Simpan Perubahan 🌸", fontWeight = FontWeight.Bold, color = Color.White)
@@ -1226,7 +1227,7 @@ private fun EmptyDebtState(
             Icon(
                 imageVector = Icons.Rounded.VolunteerActivism,
                 contentDescription = null,
-                tint = PrimarySakuraPink,
+                tint = AraTheme.colors.accent,
                 modifier = Modifier.size(36.dp)
             )
         }
@@ -1235,7 +1236,7 @@ private fun EmptyDebtState(
             text = if (isFriendPaid) "Belum ada utang ke orang lain 🍃" else "Tidak ada yang berutang padamu 🍃",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = if (isDark) TextPrimaryDark else DeepBerryDark,
+            color = AraTheme.colors.textStrong,
             textAlign = TextAlign.Center
         )
 

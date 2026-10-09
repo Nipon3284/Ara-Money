@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.addtransaction
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -83,6 +85,7 @@ import com.aramoney.app.presentation.theme.softShadow
 fun AddTransactionSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    onSaved: (message: String) -> Unit = {},
     viewModel: AddTransactionViewModel = hiltViewModel(),
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 ) {
@@ -90,9 +93,11 @@ fun AddTransactionSheet(
     val isDark = isAppInDarkTheme()
     val haptic = LocalHapticFeedback.current
 
-    // Jika berhasil tersimpan, tutup modal bottom sheet dan reset
+    // Jika berhasil tersimpan, tampilkan feedback, tutup modal bottom sheet dan reset
     LaunchedEffect(uiState.isSavedSuccess) {
         if (uiState.isSavedSuccess) {
+            val label = if (uiState.type == "EXPENSE") "Pengeluaran" else "Pemasukan"
+            onSaved("$label ${uiState.formattedAmount} tersimpan")
             viewModel.resetState()
             onDismissRequest()
         }
@@ -105,7 +110,7 @@ fun AddTransactionSheet(
         },
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = if (isDark) SurfaceElevatedDark else SurfaceElevated,
+        containerColor = AraTheme.colors.surfaceElevated,
         modifier = modifier
     ) {
         Column(
@@ -133,7 +138,7 @@ fun AddTransactionSheet(
                     text = "Catat Transaksi 🎀",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
 
                 IconButton(
@@ -163,8 +168,8 @@ fun AddTransactionSheet(
                     .fillMaxWidth()
                     .softShadow(elevation = 3.dp, shape = RoundedCornerShape(20.dp)),
                 shape = RoundedCornerShape(20.dp),
-                color = if (isDark) SurfaceCardDark else SurfaceCard,
-                border = BorderStroke(1.dp, if (isDark) Color(0xFF4B2E52) else Color(0xFFF7E6EE))
+                color = AraTheme.colors.surfaceCard,
+                border = BorderStroke(1.dp, AraTheme.colors.border)
             ) {
                 Column(
                     modifier = Modifier
@@ -182,9 +187,9 @@ fun AddTransactionSheet(
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Bold,
                         color = if (uiState.type == "EXPENSE") {
-                            if (isDark) PrimarySakuraPink else DeepBerryDark
+                            AraTheme.colors.expense
                         } else {
-                            if (isDark) SuccessMintGreen else Color(0xFF2E7D32)
+                            AraTheme.colors.income
                         },
                         textAlign = TextAlign.Center
                     )
@@ -207,7 +212,7 @@ fun AddTransactionSheet(
                     Text(
                         text = uiState.errorMessage!!,
                         style = MaterialTheme.typography.bodySmall,
-                        color = ErrorSoftRed,
+                        color = AraTheme.colors.danger,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                     )
                 }
@@ -222,7 +227,7 @@ fun AddTransactionSheet(
                     text = "Kategori",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
 
                 FlowRow(
@@ -259,8 +264,8 @@ fun AddTransactionSheet(
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimarySakuraPink,
-                    unfocusedBorderColor = if (isDark) Color(0xFF4B2E52) else Color(0xFFF3D9E4),
+                    focusedBorderColor = AraTheme.colors.accent,
+                    unfocusedBorderColor = AraTheme.colors.border,
                     focusedContainerColor = if (isDark) SurfaceCardDark else Color.White,
                     unfocusedContainerColor = if (isDark) SurfaceCardDark else Color.White
                 )
@@ -300,8 +305,8 @@ fun AddTransactionSheet(
                         ),
                     shape = RoundedCornerShape(20.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimarySakuraPink,
-                        disabledContainerColor = if (isDark) Color(0xFF422847) else Color(0xFFE8DCE2)
+                        containerColor = AraTheme.colors.action,
+                        disabledContainerColor = AraTheme.colors.disabledContainer
                     )
                 ) {
                     if (uiState.isSaving) {
@@ -336,7 +341,7 @@ private fun TransactionTypeSegmentedControl(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = if (isDark) SurfaceCardDark else SurfaceCard
+        color = AraTheme.colors.surfaceCard
     ) {
         Row(
             modifier = Modifier
@@ -352,7 +357,7 @@ private fun TransactionTypeSegmentedControl(
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { onTypeSelected("EXPENSE") },
                 shape = RoundedCornerShape(12.dp),
-                color = if (isExpense) PrimarySakuraPink else Color.Transparent
+                color = if (isExpense) AraTheme.colors.action else Color.Transparent
             ) {
                 Text(
                     text = "💸 Pengeluaran",
@@ -413,7 +418,7 @@ private fun BubbleCategoryChip(
     )
 
     val chipBg = when {
-        isSelected -> if (isDark) Color(0xFF532457) else PrimarySakuraPinkContainer
+        isSelected -> AraTheme.colors.selectedContainer
         isDark -> SurfaceCardDark
         else -> SurfaceCard
     }
@@ -502,7 +507,7 @@ private fun CustomPastelNumpad(
                                 contentDescription = if (item == "DEL") "Hapus angka terakhir" else "Angka $item"
                             },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isDark) SurfaceCardDark else SurfaceCard
+                        color = AraTheme.colors.surfaceCard
                     ) {
                         Box(
                             modifier = Modifier
@@ -514,7 +519,7 @@ private fun CustomPastelNumpad(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Rounded.Backspace,
                                     contentDescription = null,
-                                    tint = if (isDark) TextPrimaryDark else DeepBerryDark,
+                                    tint = AraTheme.colors.textStrong,
                                     modifier = Modifier.size(20.dp)
                                 )
                             } else {
@@ -522,7 +527,7 @@ private fun CustomPastelNumpad(
                                     text = item,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                                    color = AraTheme.colors.textStrong
                                 )
                             }
                         }
@@ -574,7 +579,7 @@ private fun QuickAmountChipsRow(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) PrimarySakuraPink else DeepBerryDark,
+                    color = AraTheme.colors.expense,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(vertical = 9.dp)
                 )
@@ -585,5 +590,5 @@ private fun QuickAmountChipsRow(
 
 @Composable
 private fun MaterialSchemeTint(isDark: Boolean): Color {
-    return if (isDark) TextPrimaryDark else DeepBerryDark
+    return AraTheme.colors.textStrong
 }

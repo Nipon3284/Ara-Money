@@ -28,7 +28,7 @@ data class AddTransactionUiState(
         get() = rawAmountString.toDoubleOrNull() ?: 0.0
 
     val formattedAmount: String
-        get() = if (amount == 0.0) "Rp 0" else CurrencyFormatter.formatRupiah(amount)
+        get() = CurrencyFormatter.formatRupiah(amount)
 
     val canSave: Boolean
         get() = amount > 0.0 && selectedCategoryId != null && !isSaving
@@ -80,11 +80,11 @@ class AddTransactionViewModel @Inject constructor(
     fun onDigitPressed(digit: String) {
         val current = _uiState.value.rawAmountString
 
-        // Cegah input terlalu panjang (maksimum 9 digit / 999 juta)
-        if (current.length >= 9) return
-
         // Cegah awalan nol berulang
-        if (current.isEmpty() && digit == "0") return
+        if (current.isEmpty() && digit.all { it == '0' }) return
+
+        // Cegah input terlalu panjang (maksimum 9 digit / 999 juta), termasuk tombol "000"
+        if (current.length + digit.length > 9) return
 
         val newString = current + digit
         _uiState.update { it.copy(rawAmountString = newString, errorMessage = null) }

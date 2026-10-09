@@ -6,7 +6,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.runtime.CompositionLocalProvider
+import com.aramoney.app.presentation.components.LocalAraSnackbar
+import com.aramoney.app.presentation.components.rememberAraSnackbarController
+import com.aramoney.app.presentation.theme.PrimarySakuraPink
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,9 +63,23 @@ fun AraNavGraph(
         AraScreen.Settings.route
     )
 
+    val snackbarController = rememberAraSnackbarController()
+
+    CompositionLocalProvider(LocalAraSnackbar provides snackbarController) {
     SakuraBackground(modifier = modifier) {
         Scaffold(
             containerColor = Color.Transparent,
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarController.hostState) { data ->
+                    Snackbar(
+                        snackbarData = data,
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = MaterialTheme.colorScheme.inverseSurface,
+                        contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                        actionColor = PrimarySakuraPink
+                    )
+                }
+            },
             bottomBar = {
                 if (isBottomBarVisible) {
                     AraBottomBar(
@@ -149,10 +171,12 @@ fun AraNavGraph(
                 // Modal Bottom Sheet Overlay untuk Tambah Transaksi Cepat
                 if (isAddSheetOpen) {
                     AddTransactionSheet(
-                        onDismissRequest = { isAddSheetOpen = false }
+                        onDismissRequest = { isAddSheetOpen = false },
+                        onSaved = { message -> snackbarController.show(message) }
                     )
                 }
             }
         }
+    }
     }
 }

@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.report
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -55,6 +57,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.aramoney.app.presentation.components.LocalAraSnackbar
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,6 +111,7 @@ fun ReportScreen(
     viewModel: ReportViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbar = LocalAraSnackbar.current
     val isDark = isAppInDarkTheme()
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -177,7 +185,7 @@ fun ReportScreen(
                         text = "Laporan Keuangan",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                 }
             }
@@ -200,7 +208,7 @@ fun ReportScreen(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isDark) SurfaceCardDark else SurfaceCard
+                        color = AraTheme.colors.surfaceCard
                     ) {
                         Row(
                             modifier = Modifier
@@ -216,7 +224,7 @@ fun ReportScreen(
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable { viewModel.setPeriodType(type) },
                                     shape = RoundedCornerShape(12.dp),
-                                    color = if (isSelected) PrimarySakuraPink else Color.Transparent
+                                    color = if (isSelected) AraTheme.colors.action else Color.Transparent
                                 ) {
                                     Text(
                                         text = type.label,
@@ -234,7 +242,7 @@ fun ReportScreen(
                     // Baris Navigasi Tanggal sesuai Mode yang Dipilih
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isDark) SurfaceCardDark else SurfaceCard,
+                        color = AraTheme.colors.surfaceCard,
                         modifier = Modifier
                             .fillMaxWidth()
                             .softShadow(elevation = 2.dp)
@@ -250,12 +258,12 @@ fun ReportScreen(
                                 ) {
                                     IconButton(
                                         onClick = { viewModel.onPreviousMonth() },
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.size(48.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
                                             contentDescription = "Bulan sebelumnya",
-                                            tint = if (isDark) TextPrimaryDark else DeepBerryDark
+                                            tint = AraTheme.colors.textStrong
                                         )
                                     }
 
@@ -263,17 +271,17 @@ fun ReportScreen(
                                         text = uiState.selectedYearMonth.format(monthFormatter),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                                        color = AraTheme.colors.textStrong
                                     )
 
                                     IconButton(
                                         onClick = { viewModel.onNextMonth() },
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.size(48.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                                             contentDescription = "Bulan berikutnya",
-                                            tint = if (isDark) TextPrimaryDark else DeepBerryDark
+                                            tint = AraTheme.colors.textStrong
                                         )
                                     }
                                 }
@@ -288,12 +296,12 @@ fun ReportScreen(
                                 ) {
                                     IconButton(
                                         onClick = { viewModel.onPreviousDay() },
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.size(48.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
                                             contentDescription = "Hari sebelumnya",
-                                            tint = if (isDark) TextPrimaryDark else DeepBerryDark
+                                            tint = AraTheme.colors.textStrong
                                         )
                                     }
 
@@ -308,25 +316,25 @@ fun ReportScreen(
                                         Icon(
                                             imageVector = Icons.Rounded.CalendarMonth,
                                             contentDescription = null,
-                                            tint = PrimarySakuraPink,
+                                            tint = AraTheme.colors.accent,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
                                             text = uiState.selectedDate.format(dayFormatter),
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isDark) TextPrimaryDark else DeepBerryDark
+                                            color = AraTheme.colors.textStrong
                                         )
                                     }
 
                                     IconButton(
                                         onClick = { viewModel.onNextDay() },
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.size(48.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                                             contentDescription = "Hari berikutnya",
-                                            tint = if (isDark) TextPrimaryDark else DeepBerryDark
+                                            tint = AraTheme.colors.textStrong
                                         )
                                     }
                                 }
@@ -347,21 +355,21 @@ fun ReportScreen(
                                         Icon(
                                             imageVector = Icons.Rounded.DateRange,
                                             contentDescription = null,
-                                            tint = PrimarySakuraPink,
+                                            tint = AraTheme.colors.accent,
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text(
                                             text = "${uiState.customStartDate.format(rangeDateFormatter)} - ${uiState.customEndDate.format(rangeDateFormatter)}",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isDark) TextPrimaryDark else DeepBerryDark
+                                            color = AraTheme.colors.textStrong
                                         )
                                     }
 
                                     Text(
                                         text = "Ubah 🗓️",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PrimarySakuraPink,
+                                        color = AraTheme.colors.accent,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -398,7 +406,7 @@ fun ReportScreen(
                     text = "Rincian Pengeluaran per Kategori",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
             }
 
@@ -434,7 +442,7 @@ fun ReportScreen(
                         text = if (uiState.selectedCategoryId != null) "Transaksi Terfilter" else "Daftar Setiap Transaksi",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
 
                     Surface(
@@ -445,7 +453,7 @@ fun ReportScreen(
                             text = "$totalTransactionsCount catatan",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = DeepBerry,
+                            color = AraTheme.colors.berry,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
@@ -516,7 +524,7 @@ fun ReportScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable { displayLimit += 30 },
                             shape = RoundedCornerShape(16.dp),
-                            color = if (isDark) SurfaceCardDark else SurfaceCard
+                            color = AraTheme.colors.surfaceCard
                         ) {
                             Row(
                                 modifier = Modifier
@@ -528,7 +536,7 @@ fun ReportScreen(
                                 Icon(
                                     imageVector = Icons.Rounded.ExpandMore,
                                     contentDescription = null,
-                                    tint = PrimarySakuraPink,
+                                    tint = AraTheme.colors.accent,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.size(6.dp))
@@ -536,7 +544,7 @@ fun ReportScreen(
                                     text = "Tampilkan $remaining Transaksi Lainnya 🌸",
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimarySakuraPink
+                                    color = AraTheme.colors.accent
                                 )
                             }
                         }
@@ -636,7 +644,7 @@ fun ReportScreen(
                 Icon(
                     imageVector = Icons.Rounded.WarningAmber,
                     contentDescription = null,
-                    tint = Color(0xFFE65100),
+                    tint = AraTheme.colors.warning,
                     modifier = Modifier.size(36.dp)
                 )
             },
@@ -645,7 +653,7 @@ fun ReportScreen(
                     text = "Transaksi Lama (> 24 Jam) ⚠️",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark,
+                    color = AraTheme.colors.textStrong,
                     textAlign = TextAlign.Center
                 )
             },
@@ -659,7 +667,7 @@ fun ReportScreen(
             confirmButton = {
                 Button(
                     onClick = { viewModel.confirmEditOldTransaction() },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
@@ -691,7 +699,9 @@ fun ReportScreen(
             categories = uiState.categories,
             onDismissRequest = { viewModel.dismissEditTransaction() },
             onSave = { updated ->
-                viewModel.updateTransaction(updated)
+                viewModel.updateTransaction(updated) {
+                    snackbar?.show("Perubahan transaksi tersimpan")
+                }
             },
             onDelete = {
                 viewModel.dismissEditTransaction()
@@ -711,20 +721,28 @@ fun ReportScreen(
                     text = "Hapus Transaksi? 🥺",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
             },
             text = {
                 Text(
-                    text = "Yakin ingin menghapus catatan senilai ${CurrencyFormatter.formatRupiah(toDelete.amount)}? Data yang dihapus tidak bisa dikembalikan lho, Kak~",
+                    text = "Yakin ingin menghapus catatan senilai ${CurrencyFormatter.formatRupiah(toDelete.amount)}? Kakak masih bisa mengurungkannya sesaat setelah dihapus.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             },
             confirmButton = {
                 Button(
-                    onClick = { viewModel.confirmDeleteTransaction() },
-                    colors = ButtonDefaults.buttonColors(containerColor = ErrorSoftRed),
+                    onClick = {
+                        viewModel.confirmDeleteTransaction { deleted ->
+                            snackbar?.show(
+                                message = "Transaksi ${CurrencyFormatter.formatRupiah(deleted.amount)} dihapus",
+                                actionLabel = "Urungkan",
+                                onAction = { viewModel.restoreTransaction(deleted) }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.danger),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text(
@@ -788,14 +806,14 @@ private fun DateSectionHeader(
                 text = "-${CurrencyFormatter.formatRupiah(dailyTotalExpense)}",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = if (isDark) PrimarySakuraPink else DeepBerryDark
+                color = AraTheme.colors.expense
             )
         } else if (dailyTotalIncome > 0.0) {
             Text(
                 text = "+${CurrencyFormatter.formatRupiah(dailyTotalIncome)}",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = if (isDark) SuccessMintGreen else Color(0xFF2E7D32)
+                color = AraTheme.colors.income
             )
         }
     }
@@ -831,7 +849,7 @@ private fun ReportTransactionRow(
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated,
+        color = AraTheme.colors.surfaceElevated,
         tonalElevation = 1.dp
     ) {
         Row(
@@ -870,7 +888,7 @@ private fun ReportTransactionRow(
                         text = category?.name ?: "Transaksi",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark,
+                        color = AraTheme.colors.textStrong,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
@@ -884,7 +902,7 @@ private fun ReportTransactionRow(
                             Text(
                                 text = "Hutang",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = DeepBerry,
+                                color = AraTheme.colors.berry,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -922,9 +940,9 @@ private fun ReportTransactionRow(
 
             // Nominal Transaksi
             val amountColor = if (isIncome) {
-                if (isDark) SuccessMintGreen else Color(0xFF2E7D32)
+                AraTheme.colors.income
             } else {
-                if (isDark) PrimarySakuraPink else DeepBerryDark
+                AraTheme.colors.expense
             }
             val prefix = if (isIncome) "+ " else "- "
 
@@ -938,7 +956,7 @@ private fun ReportTransactionRow(
             // Tombol Hapus Cepat
             IconButton(
                 onClick = onDeleteClick,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Delete,
@@ -978,7 +996,7 @@ private fun ReportStatCards(
         StatSummaryCard(
             title = "Pemasukan",
             amount = totalIncome,
-            accentColor = if (isDark) SuccessMintGreen else Color(0xFF2E7D32),
+            accentColor = AraTheme.colors.income,
             isDark = isDark,
             modifier = Modifier.weight(1f)
         )
@@ -1005,7 +1023,7 @@ private fun StatSummaryCard(
     Surface(
         modifier = modifier.softShadow(elevation = 3.dp, shape = RoundedCornerShape(18.dp)),
         shape = RoundedCornerShape(18.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        color = AraTheme.colors.surfaceElevated
     ) {
         Column(
             modifier = Modifier
@@ -1045,7 +1063,7 @@ private fun CustomDonutChartCard(
             .fillMaxWidth()
             .softShadow(elevation = 6.dp, shape = RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        color = AraTheme.colors.surfaceElevated
     ) {
         Column(
             modifier = Modifier
@@ -1058,17 +1076,29 @@ private fun CustomDonutChartCard(
                 text = "Komposisi Pengeluaran 🍩",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                color = AraTheme.colors.textStrong
             )
 
-            val chartProgress by animateFloatAsState(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-                label = "ChartProgress"
-            )
+            // Animasi donut dari 0 → 1 setiap kali komposisi data berubah
+            val chartAnim = remember { Animatable(0f) }
+            LaunchedEffect(categoryBreakdown, totalExpense) {
+                chartAnim.snapTo(0f)
+                chartAnim.animateTo(1f, animationSpec = tween(durationMillis = 900, easing = FastOutSlowInEasing))
+            }
+            val chartProgress = chartAnim.value
+
+            val chartDescription = if (categoryBreakdown.isEmpty() || totalExpense <= 0.0) {
+                "Diagram komposisi pengeluaran: belum ada data"
+            } else {
+                "Diagram komposisi pengeluaran. " + categoryBreakdown.joinToString(", ") {
+                    "${it.categoryName} ${"%.0f".format(it.percentage)} persen"
+                }
+            }
 
             Box(
-                modifier = Modifier.size(220.dp),
+                modifier = Modifier
+                    .size(220.dp)
+                    .semantics { contentDescription = chartDescription },
                 contentAlignment = Alignment.Center
             ) {
                 Canvas(modifier = Modifier.size(200.dp)) {
@@ -1130,7 +1160,7 @@ private fun CustomDonutChartCard(
                         text = CurrencyFormatter.formatRupiah(totalExpense),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                 }
             }
@@ -1162,7 +1192,7 @@ private fun CategoryBreakdownItem(
             .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+        color = AraTheme.colors.surfaceElevated
     ) {
         Column(
             modifier = Modifier
@@ -1199,7 +1229,7 @@ private fun CategoryBreakdownItem(
                             text = item.categoryName,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) TextPrimaryDark else DeepBerryDark
+                            color = AraTheme.colors.textStrong
                         )
                         Text(
                             text = "${item.transactionCount} transaksi",
@@ -1214,7 +1244,7 @@ private fun CategoryBreakdownItem(
                         text = CurrencyFormatter.formatRupiah(item.totalAmount),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong
                     )
                     Text(
                         text = String.format(Locale.US, "%.1f%%", item.percentage),
@@ -1259,7 +1289,7 @@ private fun EmptyReportState(isDark: Boolean) {
             Icon(
                 imageVector = Icons.Rounded.DonutLarge,
                 contentDescription = null,
-                tint = PrimarySakuraPink,
+                tint = AraTheme.colors.accent,
                 modifier = Modifier.size(34.dp)
             )
         }
@@ -1268,7 +1298,7 @@ private fun EmptyReportState(isDark: Boolean) {
             text = "Belum ada pengeluaran di periode ini 🌸",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = if (isDark) TextPrimaryDark else DeepBerryDark,
+            color = AraTheme.colors.textStrong,
             textAlign = TextAlign.Center
         )
 

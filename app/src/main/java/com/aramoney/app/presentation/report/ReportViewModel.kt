@@ -198,10 +198,11 @@ class ReportViewModel @Inject constructor(
         _transactionToEdit.value = null
     }
 
-    fun updateTransaction(transaction: TransactionEntity) {
+    fun updateTransaction(transaction: TransactionEntity, onDone: () -> Unit = {}) {
         viewModelScope.launch {
             transactionRepository.updateTransaction(transaction)
             _transactionToEdit.value = null
+            onDone()
         }
     }
 
@@ -213,11 +214,19 @@ class ReportViewModel @Inject constructor(
         _transactionToDelete.value = null
     }
 
-    fun confirmDeleteTransaction() {
+    fun confirmDeleteTransaction(onDeleted: (TransactionEntity) -> Unit = {}) {
         val transaction = _transactionToDelete.value ?: return
         viewModelScope.launch {
             transactionRepository.deleteTransaction(transaction)
             _transactionToDelete.value = null
+            onDeleted(transaction)
+        }
+    }
+
+    /** Masukkan kembali transaksi yang baru dihapus (aksi Undo dari Snackbar). */
+    fun restoreTransaction(transaction: TransactionEntity) {
+        viewModelScope.launch {
+            transactionRepository.insertTransaction(transaction)
         }
     }
 }

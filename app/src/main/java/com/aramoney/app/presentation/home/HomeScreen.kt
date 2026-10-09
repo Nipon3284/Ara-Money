@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.home
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,7 +27,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material.icons.rounded.ReceiptLong
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,7 +50,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aramoney.app.presentation.components.AllCategoryChip
 import com.aramoney.app.presentation.components.CategoryChip
+import com.aramoney.app.presentation.components.LocalAraSnackbar
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import com.aramoney.app.presentation.components.CuteFAB
 import com.aramoney.app.presentation.components.EditTransactionSheet
 import com.aramoney.app.presentation.components.FloralDecoration
@@ -76,6 +84,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isDark = isAppInDarkTheme()
     val scrollState = rememberLazyListState()
+    val snackbar = LocalAraSnackbar.current
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -97,7 +106,7 @@ fun HomeScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Semangat Hari Ini, 🌸",
+                            text = "Halo, semangat hari ini!",
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else DeepBerry
                         )
@@ -105,7 +114,7 @@ fun HomeScreen(
                             text = uiState.userName,
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) TextPrimaryDark else DeepBerryDark
+                            color = AraTheme.colors.textStrong
                         )
                     }
 
@@ -141,22 +150,30 @@ fun HomeScreen(
                 )
             }
 
-            // 3. Kategori Quick Actions (Horizontal LazyRow)
-            item {
+            // 3. Filter kategori (hanya kategori yang dipakai hari ini) + chip "Semua"
+            if (uiState.filterCategories.size > 1) item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = "Filter Kategori",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) TextPrimaryDark else DeepBerryDark
+                        color = AraTheme.colors.textStrong,
+                        modifier = Modifier.semantics { heading() }
                     )
 
                     LazyRow(
+                        modifier = Modifier.selectableGroup(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         contentPadding = PaddingValues(horizontal = 2.dp)
                     ) {
+                        item(key = "all") {
+                            AllCategoryChip(
+                                isSelected = uiState.selectedCategoryId == null,
+                                onClick = { viewModel.onCategorySelected(null) }
+                            )
+                        }
                         items(
-                            items = uiState.categories,
+                            items = uiState.filterCategories,
                             key = { it.id }
                         ) { category ->
                             CategoryChip(
@@ -182,13 +199,14 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = "Transaksi Hari Ini 🌸",
+                                text = "Transaksi Hari Ini",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isDark) TextPrimaryDark else DeepBerryDark
+                                color = AraTheme.colors.textStrong,
+                                modifier = Modifier.semantics { heading() }
                             )
 
-                            if (uiState.todayTransactionCount > 0) {
+                            if (uiState.recentTransactions.isNotEmpty()) {
                                 Surface(
                                     color = PrimarySakuraPink.copy(alpha = 0.2f),
                                     shape = RoundedCornerShape(8.dp)
@@ -197,31 +215,28 @@ fun HomeScreen(
                                         text = "${uiState.recentTransactions.size}",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = DeepBerry,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        color = AraTheme.colors.berry,
+                                        modifier = Modifier
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            .semantics { contentDescription = "${uiState.recentTransactions.size} transaksi" }
                                     )
                                 }
                             }
                         }
 
-                        // Tombol Lihat Semua di Laporan
-                        Row(
-                            modifier = Modifier
-                                .clickable(onClick = onNavigateToReport)
-                                .padding(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
+                        // Tombol Lihat Semua di Laporan (touch target >= 48dp)
+                        TextButton(onClick = onNavigateToReport) {
                             Text(
                                 text = "Laporan Lengkap",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = PrimarySakuraPink
+                                color = AraTheme.colors.accent
                             )
+                            Spacer(modifier = Modifier.size(4.dp))
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                                 contentDescription = null,
-                                tint = PrimarySakuraPink,
+                                tint = AraTheme.colors.accent,
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -231,7 +246,7 @@ fun HomeScreen(
                     if (uiState.todayTransactionCount > 0) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isDark) SurfaceCardDark else SurfaceCard,
+                            color = AraTheme.colors.surfaceCard,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
@@ -245,14 +260,14 @@ fun HomeScreen(
                                     text = "Keluar hari ini: -${CurrencyFormatter.formatRupiah(uiState.todayExpenseTotal)}",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
-                                    color = if (isDark) PrimarySakuraPink else DeepBerry
+                                    color = AraTheme.colors.expense
                                 )
                                 if (uiState.todayIncomeTotal > 0.0) {
                                     Text(
                                         text = "Masuk: +${CurrencyFormatter.formatRupiah(uiState.todayIncomeTotal)}",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Medium,
-                                        color = if (isDark) SuccessMintGreen else Color(0xFF2E7D32)
+                                        color = AraTheme.colors.income
                                     )
                                 }
                             }
@@ -275,18 +290,13 @@ fun HomeScreen(
                     key = { it.id }
                 ) { transaction ->
                     val category = uiState.categories.find { it.id == transaction.categoryId }
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + slideInVertically { it / 2 },
-                        exit = fadeOut()
-                    ) {
-                        TransactionListItem(
-                            transaction = transaction,
-                            category = category,
-                            onClick = { viewModel.onTransactionClick(transaction) },
-                            onDeleteRequest = { viewModel.requestDeleteTransaction(transaction) }
-                        )
-                    }
+                    TransactionListItem(
+                        transaction = transaction,
+                        category = category,
+                        onClick = { viewModel.onTransactionClick(transaction) },
+                        onDeleteRequest = { viewModel.requestDeleteTransaction(transaction) },
+                        modifier = Modifier.animateItem()
+                    )
                 }
             }
 
@@ -319,7 +329,7 @@ fun HomeScreen(
                 Icon(
                     imageVector = Icons.Rounded.WarningAmber,
                     contentDescription = null,
-                    tint = Color(0xFFE65100),
+                    tint = AraTheme.colors.warning,
                     modifier = Modifier.size(36.dp)
                 )
             },
@@ -328,7 +338,7 @@ fun HomeScreen(
                     text = "Transaksi Lama (> 24 Jam) ⚠️",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark,
+                    color = AraTheme.colors.textStrong,
                     textAlign = TextAlign.Center
                 )
             },
@@ -342,7 +352,7 @@ fun HomeScreen(
             confirmButton = {
                 Button(
                     onClick = { viewModel.confirmEditOldTransaction() },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimarySakuraPink),
+                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
@@ -374,7 +384,9 @@ fun HomeScreen(
             categories = uiState.categories,
             onDismissRequest = { viewModel.dismissEditTransaction() },
             onSave = { updated ->
-                viewModel.updateTransaction(updated)
+                viewModel.updateTransaction(updated) {
+                    snackbar?.show("Perubahan transaksi tersimpan")
+                }
             },
             onDelete = {
                 viewModel.dismissEditTransaction()
@@ -394,20 +406,28 @@ fun HomeScreen(
                     text = "Hapus Transaksi? 🥺",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) TextPrimaryDark else DeepBerryDark
+                    color = AraTheme.colors.textStrong
                 )
             },
             text = {
                 Text(
-                    text = "Yakin ingin menghapus catatan senilai ${CurrencyFormatter.formatRupiah(toDelete.amount)}? Data yang dihapus tidak bisa dikembalikan lho, Kak~",
+                    text = "Yakin ingin menghapus catatan senilai ${CurrencyFormatter.formatRupiah(toDelete.amount)}? Kakak masih bisa mengurungkannya sesaat setelah dihapus.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             },
             confirmButton = {
                 Button(
-                    onClick = { viewModel.confirmDeleteTransaction() },
-                    colors = ButtonDefaults.buttonColors(containerColor = ErrorSoftRed),
+                    onClick = {
+                        viewModel.confirmDeleteTransaction { deleted ->
+                            snackbar?.show(
+                                message = "Transaksi ${CurrencyFormatter.formatRupiah(deleted.amount)} dihapus",
+                                actionLabel = "Urungkan",
+                                onAction = { viewModel.restoreTransaction(deleted) }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.danger),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text(
@@ -460,9 +480,9 @@ private fun EmptyTransactionTodayState(
                 opacity = 0.35f
             )
             Icon(
-                imageVector = Icons.Rounded.ReceiptLong,
+                imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
                 contentDescription = null,
-                tint = PrimarySakuraPink,
+                tint = AraTheme.colors.accent,
                 modifier = Modifier.size(36.dp)
             )
         }
@@ -471,7 +491,7 @@ private fun EmptyTransactionTodayState(
             text = if (isFiltered) "Tidak ada transaksi kategori ini hari ini 🍃" else "Belum ada transaksi hari ini 🍃",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = if (isDark) TextPrimaryDark else DeepBerryDark,
+            color = AraTheme.colors.textStrong,
             textAlign = TextAlign.Center
         )
 
@@ -498,13 +518,13 @@ private fun EmptyTransactionTodayState(
                 Text(
                     text = "Lihat riwayat transaksi sebelumnya di Laporan",
                     style = MaterialTheme.typography.labelMedium,
-                    color = PrimarySakuraPink,
+                    color = AraTheme.colors.accent,
                     fontWeight = FontWeight.SemiBold
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                     contentDescription = null,
-                    tint = PrimarySakuraPink,
+                    tint = AraTheme.colors.accent,
                     modifier = Modifier.size(14.dp)
                 )
             }

@@ -1,5 +1,7 @@
 package com.aramoney.app.presentation.components
 
+import com.aramoney.app.presentation.theme.AraTheme
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -114,7 +116,7 @@ fun TransactionListItem(
                         contentDescription = "Transaksi ${category?.name ?: "Umum"}, ${if (isIncome) "Pemasukan" else "Pengeluaran"} ${CurrencyFormatter.formatRupiah(transaction.amount)}"
                     },
                 shape = RoundedCornerShape(20.dp),
-                color = if (isDark) SurfaceElevatedDark else SurfaceElevated
+                color = AraTheme.colors.surfaceElevated
             ) {
                 Row(
                     modifier = Modifier
@@ -175,13 +177,13 @@ fun TransactionListItem(
                                         Icon(
                                             imageVector = Icons.Rounded.Group,
                                             contentDescription = "Hutang",
-                                            tint = PrimarySakuraPink,
+                                            tint = AraTheme.colors.accent,
                                             modifier = Modifier.size(11.dp)
                                         )
                                         Text(
                                             text = " Hutang",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = DeepBerry,
+                                            color = AraTheme.colors.berry,
                                             fontWeight = FontWeight.Bold,
                                             maxLines = 1
                                         )
@@ -208,9 +210,9 @@ fun TransactionListItem(
 
                     // Nominal Transaksi (+ / -)
                     val amountColor = if (isIncome) {
-                        if (isDark) SuccessMintGreen else Color(0xFF2E7D32)
+                        AraTheme.colors.income
                     } else {
-                        if (isDark) PrimarySakuraPink else DeepBerryDark
+                        AraTheme.colors.expense
                     }
                     val amountPrefix = if (isIncome) "+ " else "- "
 
