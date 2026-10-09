@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">Ara Money</string>
+
+    <!-- Navigasi -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_report">Laporan</string>
+    <string name="nav_debt">Utang</string>
+    <string name="nav_settings">Pengaturan</string>
+    <string name="nav_onboarding">Mulai</string>
+    <string name="nav_categories">Kategori</string>
+
+    <!-- Aksi umum -->
+    <string name="action_cancel">Batal</string>
+    <string name="action_save">Simpan</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_undo">Urungkan</string>
+    <string name="action_back">Kembali</string>
+    <string name="action_close">Tutup</string>
+    <string name="action_choose">Pilih</string>
+
+    <!-- Feedback -->
+    <string name="loading_data">Memuat data</string>
+    <string name="snackbar_transaction_updated">Perubahan transaksi tersimpan</string>
+    <string name="snackbar_transaction_deleted">Transaksi %1$s dihapus</string>
+
+    <!-- Dialog transaksi -->
+    <string name="dialog_delete_transaction_title">Hapus transaksi?</string>
+    <string name="dialog_delete_transaction_message">Catatan senilai %1$s akan dihapus. Kakak masih bisa mengurungkannya sesaat setelah dihapus.</string>
+    <string name="dialog_old_transaction_title">Ubah transaksi lama?</string>
+    <string name="dialog_old_transaction_message">Transaksi senilai %1$s ini dicatat lebih dari 24 jam yang lalu. Mengubahnya akan memengaruhi riwayat saldo sebelumnya.</string>
+    <string name="dialog_old_transaction_confirm">Tetap Ubah</string>
 </resources>

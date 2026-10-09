@@ -2,6 +2,7 @@ package com.aramoney.app.presentation.splitbill
 
 import com.aramoney.app.presentation.components.AraConfirmDialog
 import com.aramoney.app.presentation.components.AraEmptyState
+import com.aramoney.app.presentation.components.ListScreenSkeleton
 import com.aramoney.app.presentation.components.AraScreenHeader
 import com.aramoney.app.presentation.components.AraSegmentedControl
 import com.aramoney.app.presentation.components.CuteFAB
@@ -154,6 +155,11 @@ fun SplitBillScreen(
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (uiState.isLoading) {
+                item { ListScreenSkeleton(heroHeight = 120.dp, rows = 3) }
+                return@LazyColumn
+            }
+
             // 2. Summary Card Belum Lunas
             item {
                 DebtSummaryHeroCard(
@@ -523,7 +529,7 @@ private fun PersonDebtGroupCard(
 
                 if (isAllSettled) {
                     Text(
-                        text = "Semua catatan lunas ✨",
+                        text = "Semua catatan lunas",
                         style = MaterialTheme.typography.labelSmall,
                         color = AraTheme.colors.income,
                         fontWeight = FontWeight.SemiBold
@@ -802,9 +808,9 @@ private fun SubDebtItemCard(
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AraTheme.colors.action),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            modifier = Modifier.height(34.dp)
+                            modifier = Modifier.heightIn(min = 40.dp)
                         ) {
-                            Text("Lunaskan ✨", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Tandai Lunas", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                         }
                     }
 

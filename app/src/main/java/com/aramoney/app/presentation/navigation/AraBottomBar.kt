@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -121,6 +122,7 @@ private fun AraBottomNavItem(
     isDark: Boolean
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val title = stringResource(screen.titleRes)
 
     val scaleAnim by animateFloatAsState(
         targetValue = if (isSelected) 1.02f else 1.0f,
@@ -161,7 +163,7 @@ private fun AraBottomNavItem(
             )
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .semantics {
-                contentDescription = screen.title
+                contentDescription = title
             },
         contentAlignment = Alignment.Center
     ) {
@@ -183,7 +185,7 @@ private fun AraBottomNavItem(
                 exit = fadeOut(animationSpec = tween(180)) + shrinkHorizontally(animationSpec = tween(180))
             ) {
                 Text(
-                    text = screen.title,
+                    text = title,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = AraTheme.colors.onSelectedContainer,

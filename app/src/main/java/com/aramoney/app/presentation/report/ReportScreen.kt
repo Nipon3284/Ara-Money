@@ -64,6 +64,7 @@ import androidx.compose.ui.semantics.semantics
 import com.aramoney.app.presentation.components.LocalAraSnackbar
 import com.aramoney.app.presentation.components.AraScreenHeader
 import com.aramoney.app.presentation.components.AraEmptyState
+import com.aramoney.app.presentation.components.ListScreenSkeleton
 import com.aramoney.app.presentation.components.TransactionListItem
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.selection.selectable
@@ -338,7 +339,12 @@ fun ReportScreen(
                 }
             }
 
-            // 2. Tiga Kartu Ringkasan (Pengeluaran, Pemasukan, Selisih)
+            if (uiState.isLoading) {
+                item { ListScreenSkeleton(heroHeight = 140.dp, rows = 3) }
+                return@LazyColumn
+            }
+
+            // 2. Kartu Ringkasan (Pengeluaran, Pemasukan, Sisa)
             item {
                 ReportStatCards(
                     totalExpense = uiState.reportData.totalExpense,

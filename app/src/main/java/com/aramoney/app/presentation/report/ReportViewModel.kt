@@ -24,6 +24,7 @@ import java.time.YearMonth
 import javax.inject.Inject
 
 data class ReportUiState(
+    val isLoading: Boolean = true,
     val periodType: ReportPeriodType = ReportPeriodType.MONTHLY,
     val selectedYearMonth: YearMonth = YearMonth.now(),
     val selectedDate: LocalDate = LocalDate.now(),
@@ -106,6 +107,7 @@ class ReportViewModel @Inject constructor(
         }
 
         ReportUiState(
+            isLoading = false,
             periodType = periodType,
             selectedYearMonth = yearMonth,
             selectedDate = date,

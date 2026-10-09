@@ -43,7 +43,7 @@ sealed class SafeToSpendState {
 
     data class NeedsDateUpdate(
         val totalBalance: Double,
-        val message: String = "Tanggal kiriman sudah lewat nih, yuk update tanggal baru! 📅"
+        val message: String = "Tanggal kiriman sudah lewat. Ketuk kartu ini untuk mengatur tanggal kiriman berikutnya."
     ) : SafeToSpendState()
 
     data class NeedsSetup(

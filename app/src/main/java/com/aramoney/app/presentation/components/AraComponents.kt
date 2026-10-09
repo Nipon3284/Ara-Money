@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.aramoney.app.R
 import com.aramoney.app.presentation.theme.AraShape
 import com.aramoney.app.presentation.theme.AraSpacing
 import com.aramoney.app.presentation.theme.AraTheme
@@ -259,7 +261,7 @@ fun AraScreenHeader(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Kembali",
+                    contentDescription = stringResource(R.string.action_back),
                     tint = AraTheme.colors.textStrong
                 )
             }
@@ -312,7 +314,7 @@ fun AraConfirmDialog(
     confirmText: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    dismissText: String = "Batal",
+    dismissText: String = stringResource(R.string.action_cancel),
     isDestructive: Boolean = false,
     icon: ImageVector? = null,
     iconTint: Color = AraTheme.colors.warning,
@@ -379,10 +381,9 @@ fun OldTransactionWarningDialog(
     onDismiss: () -> Unit
 ) {
     AraConfirmDialog(
-        title = "Ubah transaksi lama?",
-        message = "Transaksi senilai $formattedAmount ini dicatat lebih dari 24 jam yang lalu. " +
-            "Mengubahnya akan memengaruhi riwayat saldo sebelumnya.",
-        confirmText = "Tetap Ubah",
+        title = stringResource(R.string.dialog_old_transaction_title),
+        message = stringResource(R.string.dialog_old_transaction_message, formattedAmount),
+        confirmText = stringResource(R.string.dialog_old_transaction_confirm),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         icon = Icons.Rounded.WarningAmber
@@ -397,9 +398,9 @@ fun DeleteTransactionDialog(
     onDismiss: () -> Unit
 ) {
     AraConfirmDialog(
-        title = "Hapus transaksi?",
-        message = "Catatan senilai $formattedAmount akan dihapus. Kakak masih bisa mengurungkannya sesaat setelah dihapus.",
-        confirmText = "Hapus",
+        title = stringResource(R.string.dialog_delete_transaction_title),
+        message = stringResource(R.string.dialog_delete_transaction_message, formattedAmount),
+        confirmText = stringResource(R.string.action_delete),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         isDestructive = true

@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SplitBillUiState(
+    val isLoading: Boolean = true,
     val selectedTab: String = "I_PAID_FOR_FRIEND", // "I_PAID_FOR_FRIEND" (Piutang) | "FRIEND_PAID_FOR_ME" (Utang)
     val personGroups: List<PersonDebtGroup> = emptyList(),
     val totalUnsettledAmount: Double = 0.0,
@@ -105,6 +106,7 @@ class SplitBillViewModel @Inject constructor(
         }
 
         SplitBillUiState(
+            isLoading = false,
             selectedTab = selectedTab,
             personGroups = groupedPersons,
             totalUnsettledAmount = totalUnsettled,

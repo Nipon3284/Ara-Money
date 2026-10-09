@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,13 +28,16 @@ fun HansaraWatermark(
 ) {
     val isDark = isAppInDarkTheme()
     val watermarkColor = if (isDark) {
-        PrimarySakuraPink.copy(alpha = 0.50f)
+        PrimarySakuraPink.copy(alpha = 0.60f)
     } else {
-        DeepBerry.copy(alpha = 0.40f)
+        DeepBerry.copy(alpha = 0.55f)
     }
 
     Row(
-        modifier = modifier.padding(vertical = 4.dp),
+        // Dekoratif: disembunyikan dari pembaca layar agar tidak mengganggu navigasi
+        modifier = modifier
+            .padding(vertical = 4.dp)
+            .clearAndSetSemantics {},
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -41,7 +45,6 @@ fun HansaraWatermark(
             text = "$prefix hansara $suffix",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
-            fontSize = 11.sp,
             letterSpacing = 1.8.sp,
             color = watermarkColor
         )

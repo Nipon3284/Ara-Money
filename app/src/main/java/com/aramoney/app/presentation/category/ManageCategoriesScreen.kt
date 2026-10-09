@@ -382,7 +382,7 @@ private fun ManageCategoryFormDialog(
         shape = RoundedCornerShape(28.dp),
         title = {
             Text(
-                text = if (formState.isEdit) "Ubah Kategori ✏️" else "Tambah Kategori 🎀",
+                text = if (formState.isEdit) "Ubah Kategori" else "Tambah Kategori",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = AraTheme.colors.textStrong
@@ -576,7 +576,7 @@ private fun ManageCategoryDeleteDialog(
         shape = RoundedCornerShape(28.dp),
         title = {
             Text(
-                text = "Hapus Kategori? 🗑️",
+                text = "Hapus kategori?",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = AraTheme.colors.textStrong

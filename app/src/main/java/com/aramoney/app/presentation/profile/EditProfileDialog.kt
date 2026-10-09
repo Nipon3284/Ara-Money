@@ -119,7 +119,7 @@ fun EditProfileDialog(
         shape = RoundedCornerShape(28.dp),
         title = {
             Text(
-                text = "Profil Pengguna 🌸",
+                text = "Ubah Profil",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = AraTheme.colors.textStrong

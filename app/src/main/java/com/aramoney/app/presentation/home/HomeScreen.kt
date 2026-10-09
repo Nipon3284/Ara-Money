@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aramoney.app.presentation.components.AllCategoryChip
+import com.aramoney.app.presentation.components.ListScreenSkeleton
 import com.aramoney.app.presentation.components.AllowanceDateDialog
 import com.aramoney.app.domain.model.SafeToSpendState
 import androidx.compose.runtime.mutableStateOf
@@ -117,10 +118,13 @@ fun HomeScreen(
                         Text(
                             text = "Halo, semangat hari ini!",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else DeepBerry
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = uiState.userName,
+                            text = if (uiState.isLoading) " " else uiState.userName,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.semantics { heading() },
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = AraTheme.colors.textStrong
@@ -151,6 +155,12 @@ fun HomeScreen(
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Skeleton saat data pertama kali dimuat (hindari nama default & empty state palsu)
+            if (uiState.isLoading) {
+                item { ListScreenSkeleton() }
+                return@LazyColumn
+            }
+
             // 2. Safe-To-Spend Hero Card
             item {
                 SafeToSpendHeroCard(
