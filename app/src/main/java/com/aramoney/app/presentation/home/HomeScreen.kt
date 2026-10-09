@@ -53,7 +53,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aramoney.app.presentation.components.AllCategoryChip
 import com.aramoney.app.presentation.components.ListScreenSkeleton
 import com.aramoney.app.presentation.components.AllowanceDateDialog
-import com.aramoney.app.domain.model.SafeToSpendState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -166,9 +165,8 @@ fun HomeScreen(
                 SafeToSpendHeroCard(
                     state = uiState.safeToSpendState,
                     modifier = Modifier.fillMaxWidth(),
-                    onCardClick = if (uiState.safeToSpendState is SafeToSpendState.NeedsDateUpdate) {
-                        { showAllowanceDatePicker = true }
-                    } else null
+                    needsAllowanceDateUpdate = uiState.needsAllowanceDateUpdate,
+                    onCardClick = { showAllowanceDatePicker = true }
                 )
             }
 
@@ -279,14 +277,14 @@ fun HomeScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Keluar hari ini: -${CurrencyFormatter.formatRupiah(uiState.todayExpenseTotal)}",
+                                    text = "Keluar hari ini: ${CurrencyFormatter.formatRupiah(uiState.todayExpenseTotal)}",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
                                     color = AraTheme.colors.expense
                                 )
                                 if (uiState.todayIncomeTotal > 0.0) {
                                     Text(
-                                        text = "Masuk: +${CurrencyFormatter.formatRupiah(uiState.todayIncomeTotal)}",
+                                        text = "Masuk: ${CurrencyFormatter.formatSigned(uiState.todayIncomeTotal, isIncome = true)}",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Medium,
                                         color = AraTheme.colors.income

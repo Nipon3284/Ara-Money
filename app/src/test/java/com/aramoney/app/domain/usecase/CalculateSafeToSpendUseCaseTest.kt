@@ -117,7 +117,7 @@ class CalculateSafeToSpendUseCaseTest {
     }
 
     @Test
-    fun `when next allowance date has passed then return NeedsDateUpdate`() {
+    fun `passed allowance date keeps normal calculation and is flagged separately`() {
         val result = useCase(
             saldoSaatIni = 300_000.0,
             dailyTargetBudget = 30_000.0,
@@ -125,8 +125,10 @@ class CalculateSafeToSpendUseCaseTest {
             today = today
         )
 
-        assertTrue(result is SafeToSpendState.NeedsDateUpdate)
-        assertEquals(300_000.0, (result as SafeToSpendState.NeedsDateUpdate).totalBalance, 0.01)
+        assertTrue(result is SafeToSpendState.Aman)
+        assertTrue(CalculateSafeToSpendUseCase.isAllowanceDatePassed(today.minusDays(1), today))
+        assertTrue(!CalculateSafeToSpendUseCase.isAllowanceDatePassed(today, today))
+        assertTrue(!CalculateSafeToSpendUseCase.isAllowanceDatePassed(null, today))
     }
 
     @Test

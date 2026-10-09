@@ -14,7 +14,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aramoney.app.presentation.components.LocalAraSnackbar
 import com.aramoney.app.presentation.components.rememberAraSnackbarController
-import com.aramoney.app.presentation.theme.PrimarySakuraPink
+import com.aramoney.app.presentation.theme.DeepBerryDark
+import com.aramoney.app.presentation.theme.PrimarySakuraPinkLight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,9 +75,11 @@ fun AraNavGraph(
                     Snackbar(
                         snackbarData = data,
                         shape = RoundedCornerShape(16.dp),
-                        containerColor = MaterialTheme.colorScheme.inverseSurface,
-                        contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-                        actionColor = PrimarySakuraPink
+                        // Warna tetap gelap di kedua tema agar tombol aksi pink selalu kontras
+                        containerColor = DeepBerryDark,
+                        contentColor = Color.White,
+                        actionColor = PrimarySakuraPinkLight,
+                        dismissActionContentColor = Color.White
                     )
                 }
             },

@@ -56,6 +56,7 @@ import com.aramoney.app.util.CurrencyFormatter
 fun SafeToSpendHeroCard(
     state: SafeToSpendState,
     modifier: Modifier = Modifier,
+    needsAllowanceDateUpdate: Boolean = false,
     onCardClick: (() -> Unit)? = null
 ) {
     val metrics = state.toHeroMetrics()
@@ -83,7 +84,9 @@ fun SafeToSpendHeroCard(
             .clip(shape)
             .background(cardGradient)
             .then(
-                if (onCardClick != null) Modifier.clickable(onClick = onCardClick) else Modifier
+                if (onCardClick != null) {
+                    Modifier.clickable(onClickLabel = "Ubah tanggal kiriman berikutnya", onClick = onCardClick)
+                } else Modifier
             )
             .padding(20.dp)
     ) {
@@ -156,6 +159,34 @@ fun SafeToSpendHeroCard(
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.9f)
                     )
+                }
+            }
+
+            // 3a. Penanda tanggal kiriman perlu diperbarui (angka di atas tetap ditampilkan)
+            if (needsAllowanceDateUpdate && onCardClick != null) {
+                Surface(
+                    color = Color.White.copy(alpha = 0.28f),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.CalendarMonth,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Tanggal kiriman sudah lewat. Ketuk untuk memperbarui.",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
 

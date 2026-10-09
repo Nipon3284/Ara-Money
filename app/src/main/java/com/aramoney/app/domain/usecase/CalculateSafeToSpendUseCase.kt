@@ -17,6 +17,10 @@ class CalculateSafeToSpendUseCase @Inject constructor() {
         const val DEFAULT_DAILY_TARGET = 30_000.0
         const val RUNWAY_SAFE_DAYS = 7L     // >= 7 hari tergolong "Aman"
         const val RUNWAY_WARNING_DAYS = 3L  // 3-6 hari tergolong "Waspada", < 3 hari tergolong "Bahaya"
+
+        /** True jika tanggal kiriman tersimpan sudah lewat sehingga perlu diperbarui pengguna. */
+        fun isAllowanceDatePassed(nextAllowanceDate: LocalDate?, today: LocalDate = LocalDate.now()): Boolean =
+            nextAllowanceDate != null && nextAllowanceDate.isBefore(today)
     }
 
     operator fun invoke(
@@ -58,10 +62,8 @@ class CalculateSafeToSpendUseCase @Inject constructor() {
             )
         }
 
-        // Edge Case 3: Tanggal kiriman yang tersimpan sudah lewat → minta pengguna memperbarui
-        if (tanggalKirimanBerikutnya != null && tanggalKirimanBerikutnya.isBefore(today)) {
-            return SafeToSpendState.NeedsDateUpdate(totalBalance = saldoSaatIni)
-        }
+        // Catatan: tanggal kiriman yang sudah lewat TIDAK menggantikan perhitungan di sini, agar angka
+        // jatah & daya tahan tetap tampil. Beranda menandainya lewat [isAllowanceDatePassed].
 
         // Hitung Daya Tahan (Financial Runway) dalam hari
         val remainingDays = (saldoSaatIni / effectiveTarget).toLong()

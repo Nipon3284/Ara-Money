@@ -36,6 +36,8 @@ data class HomeUiState(
     val todayTransactionCount: Int = 0,
     /** Kategori yang muncul di transaksi hari ini (untuk chip filter). */
     val filterCategories: List<CategoryEntity> = emptyList(),
+    /** Tanggal kiriman tersimpan sudah lewat → tampilkan ajakan memperbarui di Hero Card. */
+    val needsAllowanceDateUpdate: Boolean = false,
     val transactionToDelete: TransactionEntity? = null,
     val transactionToEdit: TransactionEntity? = null,
     val oldTransactionWarning: TransactionEntity? = null
@@ -126,6 +128,7 @@ class HomeViewModel @Inject constructor(
             todayExpenseTotal = todayExpense,
             todayIncomeTotal = todayIncome,
             todayTransactionCount = todayTransactions.size,
+            needsAllowanceDateUpdate = CalculateSafeToSpendUseCase.isAllowanceDatePassed(preferences.nextAllowanceDate, today),
             filterCategories = todayTransactions.map { it.categoryId }.distinct()
                 .mapNotNull { id -> categories.find { it.id == id } }
                 .sortedWith(compareByDescending<CategoryEntity> { it.isExpense }.thenBy { it.sortOrder }),
@@ -204,7 +207,8 @@ class HomeViewModel @Inject constructor(
     /** Masukkan kembali transaksi yang baru dihapus (aksi Undo dari Snackbar). */
     fun restoreTransaction(transaction: TransactionEntity) {
         viewModelScope.launch {
-            transactionRepository.insertTransaction(transaction)
+            // Kategori bisa saja sudah dihapus selama Snackbar tampil (FK RESTRICT) → jangan crash
+            runCatching { transactionRepository.insertTransaction(transaction) }
         }
     }
 }

@@ -199,14 +199,19 @@ class SplitBillViewModel @Inject constructor(
         _isAutoCreateTransactionChecked.value = checked
     }
 
+    private var isSettling = false
+
     fun confirmSettleDebt(onSettled: (SplitBillDebtEntity) -> Unit = {}) {
         val debt = _debtToSettle.value ?: return
+        if (isSettling) return // cegah ketuk ganda membuat transaksi kas dobel
+        isSettling = true
         val autoCreate = _isAutoCreateTransactionChecked.value
 
         viewModelScope.launch {
-            settleSplitBillUseCase(debt.id, autoCreate)
+            val result = runCatching { settleSplitBillUseCase(debt.id, autoCreate) }.getOrElse { Result.failure(it) }
             _debtToSettle.value = null
-            onSettled(debt)
+            isSettling = false
+            if (result.isSuccess) onSettled(debt)
         }
     }
 

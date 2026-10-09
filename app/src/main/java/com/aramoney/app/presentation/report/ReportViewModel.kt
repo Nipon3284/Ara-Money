@@ -224,7 +224,8 @@ class ReportViewModel @Inject constructor(
     /** Masukkan kembali transaksi yang baru dihapus (aksi Undo dari Snackbar). */
     fun restoreTransaction(transaction: TransactionEntity) {
         viewModelScope.launch {
-            transactionRepository.insertTransaction(transaction)
+            // Kategori bisa saja sudah dihapus selama Snackbar tampil (FK RESTRICT) → jangan crash
+            runCatching { transactionRepository.insertTransaction(transaction) }
         }
     }
 }

@@ -66,6 +66,11 @@ fun AddTransactionSheet(
     val haptic = LocalHapticFeedback.current
     val focusManager = LocalFocusManager.current
 
+    // ViewModel hidup sepanjang Activity: pastikan tanggal default selalu "hari ini" setiap sheet dibuka
+    LaunchedEffect(Unit) {
+        viewModel.onDateSelected(LocalDate.now())
+    }
+
     // Jika berhasil tersimpan, tampilkan feedback, tutup modal bottom sheet dan reset
     LaunchedEffect(uiState.isSavedSuccess) {
         if (uiState.isSavedSuccess) {

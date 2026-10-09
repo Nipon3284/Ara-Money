@@ -92,9 +92,15 @@ fun EditTransactionSheet(
     val newTimestamp = if (date == DateTimeUtil.epochMillisToLocalDate(transaction.timestamp)) {
         transaction.timestamp
     } else {
-        DateTimeUtil.timestampFor(date, transaction.timestamp)
+        // Pertahankan jam asli, tetapi jangan sampai melewati waktu sekarang saat dipindah ke hari ini
+        minOf(DateTimeUtil.timestampFor(date, transaction.timestamp), System.currentTimeMillis())
     }
-    val validationError = AddTransactionUseCase.validate(amountValue, selectedCategoryId, newTimestamp)
+    val validationError = AddTransactionUseCase.validate(
+        amount = amountValue,
+        categoryId = selectedCategoryId,
+        // Transaksi yang tanggalnya tidak diubah tidak perlu dicek "masa depan" (mis. jam perangkat sempat maju)
+        timestamp = if (newTimestamp == transaction.timestamp) 0L else newTimestamp
+    )
     val canSave = validationError == null
 
     ModalBottomSheet(
